@@ -200,7 +200,7 @@ function showPage(page) {
     p.classList.toggle('hidden', p.id !== 'page-' + page);
   });
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const map = { dashboard: 0, write: 1, journals: 2, rekap: 3, search: 4, profile: 5 };
+  const map = { dashboard: 0, write: 1, rekap: 2, search: 3, profile: 4 };
   const idx = map[page];
   if (idx !== undefined) {
     document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
