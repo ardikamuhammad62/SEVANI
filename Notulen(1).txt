@@ -1,0 +1,9 @@
+- Dash Siswa
+	- nama
+	- absen
+	- kelas
+	- agama
+
+- Tambahan
+	- custumizeable 
+	- notifikasi harian (1x hari)
