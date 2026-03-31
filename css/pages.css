@@ -1,0 +1,172 @@
+/* ===================================
+   SEVANI — PAGES
+   Dashboard, Journals list, Search, Profile
+   =================================== */
+
+/* ===== DASHBOARD ===== */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  border-radius: var(--radius); padding: 20px 22px; display: flex; align-items: center;
+  gap: 16px; color: #fff; box-shadow: 0 4px 16px rgba(0,0,0,.12); transition: transform .2s;
+}
+.stat-card:hover { transform: translateY(-3px); }
+.stat-card.purple { background: linear-gradient(135deg, #0EA5E9, #38BDF8); }
+.stat-card.blue   { background: linear-gradient(135deg, #6366F1, #818CF8); }
+.stat-card.green  { background: linear-gradient(135deg, #10B981, #4ADE80); }
+.stat-card.orange { background: linear-gradient(135deg, #F472B6, #F9A8D4); }
+.stat-icon { font-size: 26px; opacity: .85; }
+.stat-num { font-size: 28px; font-weight: 800; line-height: 1; }
+.stat-label { font-size: 12px; opacity: .85; margin-top: 4px; font-weight: 500; }
+
+.dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+.mood-bars { display: flex; flex-direction: column; gap: 10px; }
+.mood-bar-row { display: flex; align-items: center; gap: 12px; }
+.mood-emoji { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+.mood-bar-bg { flex: 1; height: 10px; background: var(--bg); border-radius: 99px; overflow: hidden; }
+.mood-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 99px; transition: width .5s ease; }
+.mood-count { font-size: 12px; font-weight: 700; color: var(--text-muted); width: 24px; text-align: right; }
+
+.recent-list { display: flex; flex-direction: column; gap: 10px; }
+.recent-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  background: var(--bg); border-radius: var(--radius-sm); cursor: pointer;
+  transition: background .2s, transform .15s;
+}
+.recent-item:hover { background: var(--bg2); transform: translateX(3px); }
+.recent-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+.recent-title { flex: 1; font-size: 13px; font-weight: 600; color: var(--text); }
+.recent-date { font-size: 11px; color: var(--text-muted); }
+.recent-empty { color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px; }
+
+.subject-bars { display: flex; flex-direction: column; gap: 12px; }
+.sub-bar-row { display: flex; align-items: center; gap: 14px; }
+.sub-name { font-size: 13px; font-weight: 600; color: var(--text); width: 130px; flex-shrink: 0; }
+.sub-bar-bg { flex: 1; height: 8px; background: var(--bg); border-radius: 99px; overflow: hidden; }
+.sub-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--secondary), #55efc4); transition: width .5s ease; }
+.sub-count { font-size: 12px; font-weight: 700; color: var(--text-muted); width: 28px; text-align: right; }
+
+/* ===== JOURNALS LIST ===== */
+.view-toggle { display: flex; gap: 8px; margin-bottom: 20px; }
+.view-btn {
+  padding: 8px 16px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card); cursor: pointer; font-family: var(--font); font-size: 13px;
+  font-weight: 600; color: var(--text-muted); transition: all .2s;
+  display: flex; align-items: center; gap: 6px;
+}
+.view-btn.active { border-color: var(--primary); color: var(--primary); background: rgba(108,92,231,.06); }
+
+.journals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+.journals-grid.list-view { grid-template-columns: 1fr; }
+
+.journal-card {
+  background: var(--card); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border);
+  cursor: pointer; transition: all .25s; position: relative; overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.journal-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+}
+.journal-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--primary-light); }
+
+.jcard-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.jcard-title { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.4; flex: 1; }
+.jcard-mood { font-size: 22px; flex-shrink: 0; }
+.jcard-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.jcard-preview { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 12px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.jcard-footer { display: flex; align-items: center; justify-content: space-between; }
+.jcard-date { font-size: 12px; color: var(--text-light); display: flex; align-items: center; gap: 5px; }
+.jcard-actions { display: flex; gap: 4px; opacity: 0; transition: opacity .2s; }
+.journal-card:hover .jcard-actions { opacity: 1; }
+.jcard-btn {
+  width: 30px; height: 30px; border: none; border-radius: 6px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all .15s;
+}
+.jcard-btn.edit { background: rgba(108,92,231,.1); color: var(--primary); }
+.jcard-btn.del  { background: rgba(239,68,68,.1);  color: #e53e3e; }
+.jcard-btn:hover { transform: scale(1.1); }
+
+/* List view card */
+.journals-grid.list-view .journal-card { display: flex; align-items: center; gap: 20px; padding: 16px 20px; }
+.journals-grid.list-view .journal-card::before { width: 3px; height: 100%; top: 0; left: 0; right: auto; }
+.journals-grid.list-view .jcard-body { flex: 1; }
+.journals-grid.list-view .jcard-preview { -webkit-line-clamp: 1; }
+
+/* ===== SEARCH PAGE ===== */
+.search-box-wrap { position: relative; margin-bottom: 16px; }
+.search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 16px; }
+.search-box {
+  width: 100%; padding: 14px 48px; border: 2px solid var(--border); border-radius: 14px;
+  font-family: var(--font); font-size: 15px; color: var(--text); outline: none;
+  transition: all .2s; background: var(--card); box-shadow: var(--shadow-sm);
+}
+.search-box:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(56,189,248,.12); }
+.search-clear { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); border: none; background: none; cursor: pointer; color: var(--text-muted); font-size: 16px; }
+.search-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.filter-chip {
+  padding: 6px 16px; border: 2px solid var(--border); border-radius: 99px;
+  background: var(--card); cursor: pointer; font-family: var(--font); font-size: 13px;
+  font-weight: 600; color: var(--text-muted); transition: all .2s;
+}
+.filter-chip.active { border-color: var(--primary); color: var(--primary); background: rgba(56,189,248,.08); }
+
+/* ===== PROFILE PAGE ===== */
+.profile-layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start; }
+.profile-card { text-align: center; }
+.profile-avatar-wrap { padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.profile-avatar {
+  width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent));
+  display: flex; align-items: center; justify-content: center; font-size: 38px;
+  font-weight: 800; color: #fff; margin: 0 auto 14px; box-shadow: 0 8px 24px rgba(108,92,231,.3);
+  text-transform: uppercase;
+}
+.profile-name { font-size: 17px; font-weight: 800; color: var(--text); }
+.profile-class { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.profile-stats { display: flex; justify-content: center; gap: 24px; }
+.pstat { text-align: center; }
+.pstat-num { font-size: 22px; font-weight: 800; color: var(--primary); }
+.pstat-label { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+.export-actions { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+.danger-card { border-color: #fecaca; }
+
+/* ===== WRITE PAGE ===== */
+.write-card { padding: 32px; }
+.form-row { display: flex; gap: 16px; }
+.flex-1 { flex: 1; }
+.flex-2 { flex: 2; }
+.form-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+/* RICH EDITOR */
+.editor-toolbar {
+  display: flex; align-items: center; gap: 2px; padding: 8px 12px;
+  background: var(--bg2); border: 2px solid var(--border); border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0; flex-wrap: wrap;
+}
+.editor-toolbar button {
+  width: 32px; height: 32px; border: none; background: none; cursor: pointer;
+  border-radius: 6px; color: var(--text-muted); font-size: 13px;
+  transition: all .15s; display: flex; align-items: center; justify-content: center;
+}
+.editor-toolbar button:hover { background: var(--primary); color: #fff; }
+.editor-toolbar .separator { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+.rich-editor {
+  width: 100%; min-height: 200px; padding: 14px; border: 2px solid var(--border);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm); font-family: var(--font);
+  font-size: 14px; color: var(--text); background: var(--card); outline: none; line-height: 1.7;
+  transition: border-color .2s, background-color .3s;
+}
+.rich-editor:focus { border-color: var(--primary); }
+.rich-editor:empty::before { content: attr(placeholder); color: var(--text-light); pointer-events: none; }
+
+/* ===== PROFILE ===== */
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .journals-grid { grid-template-columns: 1fr; }
+  .profile-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .stats-grid { grid-template-columns: 1fr; }
+}

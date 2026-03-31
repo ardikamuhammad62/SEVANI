@@ -60,7 +60,7 @@ function saveHabitData(data) {
   localStorage.setItem(DB_HABITS, JSON.stringify(all));
 }
 function emptyHabitEntry() {
-  return { done: false, waktu: '', keterangan: '', mood: '😊', rating: 7 };
+  return { done: false, agama: '', mapel: '', mood: '😊', rating: 7 };
 }
 function getHabitState(date) {
   const raw = getHabitData()[date];
@@ -217,7 +217,6 @@ function showPage(page) {
   if (page === 'rekap')      initRekapPage();
   if (page === 'write') {
     renderHabitCards();
-    populateFilterSubjects();
     renderJournals();
   }
 }
@@ -403,19 +402,38 @@ function openHabitModal(index) {
   document.getElementById('habitModalEmoji').textContent = h.emoji;
   document.getElementById('habitModalNum').textContent   = `Kebiasaan ${h.num}`;
   document.getElementById('habitModalName').textContent  = h.name;
-  document.getElementById('habitWaktu').value            = entry.waktu || '';
-  document.getElementById('habitKeterangan').value       = entry.keterangan || '';
+
+  // Always reset form fields (fresh entry each time)
+  document.getElementById('habitWaktu').value       = '';
+  document.getElementById('habitKeterangan').value  = '';
   document.getElementById('habitModalError').classList.add('hidden');
 
-  // Restore mood
-  currentHabitMood = entry.mood || '😊';
+  // Default mood & rating
+  currentHabitMood = '😊';
   document.querySelectorAll('.habit-mood-btn').forEach(b =>
-    b.classList.toggle('selected', b.dataset.mood === currentHabitMood));
+    b.classList.toggle('selected', b.dataset.mood === '😊'));
+  document.getElementById('habitRating').value           = 7;
+  document.getElementById('habitRatingBadge').textContent = 7;
 
-  // Restore rating
-  const ratingVal = entry.rating || 7;
-  document.getElementById('habitRating').value = ratingVal;
-  document.getElementById('habitRatingBadge').textContent = ratingVal;
+  // Show/hide special sections
+  const isBeribadah = index === 1;
+  const isBelajar   = index === 4;
+  document.getElementById('habitBeribadahSection').classList.toggle('hidden', !isBeribadah);
+  document.getElementById('habitBelajarSection').classList.toggle('hidden', !isBelajar);
+
+  if (isBeribadah) {
+    const agama = entry.agama || '';
+    document.getElementById('habitAgama').value = agama;
+    document.querySelectorAll('input[name="sholat"]').forEach(cb => cb.checked = false);
+    onAgamaChange(agama);
+  } else {
+    document.getElementById('habitWaktuGroup').classList.remove('hidden');
+  }
+
+  if (isBelajar) {
+    document.getElementById('habitMapel').value        = entry.mapel || '';
+    document.getElementById('habitTopikBelajar').value = '';
+  }
 
   // Show/hide clear button
   document.getElementById('habitClearBtn').style.display = entry.done ? 'inline-flex' : 'none';
@@ -435,32 +453,130 @@ function habitModalOutside(e) {
   if (e.target === e.currentTarget) closeHabitModal();
 }
 
+function onAgamaChange(agama) {
+  document.getElementById('sholatSection').classList.toggle('hidden', agama !== 'Islam');
+  document.getElementById('habitWaktuGroup').classList.toggle('hidden', agama === 'Islam');
+}
+
 function saveHabitDetail() {
-  const keterangan = document.getElementById('habitKeterangan').value.trim();
-  const errEl = document.getElementById('habitModalError');
-  if (!keterangan) {
-    errEl.textContent = 'Keterangan tidak boleh kosong.';
-    errEl.classList.remove('hidden');
-    document.getElementById('habitKeterangan').focus();
-    return;
+  const errEl       = document.getElementById('habitModalError');
+  const idx         = currentHabitIndex;
+  const isBeribadah = idx === 1;
+  const isBelajar   = idx === 4;
+  const keterangan  = document.getElementById('habitKeterangan').value.trim();
+
+  let agama = '', sholat = [], mapel = '', topik = '';
+
+  if (isBeribadah) {
+    agama = document.getElementById('habitAgama').value;
+    if (!agama) {
+      errEl.textContent = 'Pilih agama terlebih dahulu.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    if (agama === 'Islam') {
+      sholat = [...document.querySelectorAll('input[name="sholat"]:checked')].map(cb => cb.value);
+      if (!sholat.length) {
+        errEl.textContent = 'Centang minimal satu waktu sholat.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+    } else if (!keterangan) {
+      errEl.textContent = 'Keterangan tidak boleh kosong.';
+      errEl.classList.remove('hidden');
+      document.getElementById('habitKeterangan').focus();
+      return;
+    }
+  } else if (isBelajar) {
+    mapel = document.getElementById('habitMapel').value;
+    topik = document.getElementById('habitTopikBelajar').value.trim();
+    if (!mapel) {
+      errEl.textContent = 'Pilih mata pelajaran terlebih dahulu.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    if (!topik) {
+      errEl.textContent = 'Isi kolom "Yang Dipelajari" terlebih dahulu.';
+      errEl.classList.remove('hidden');
+      document.getElementById('habitTopikBelajar').focus();
+      return;
+    }
+    if (!keterangan) {
+      errEl.textContent = 'Keterangan tidak boleh kosong.';
+      errEl.classList.remove('hidden');
+      document.getElementById('habitKeterangan').focus();
+      return;
+    }
+  } else {
+    if (!keterangan) {
+      errEl.textContent = 'Keterangan tidak boleh kosong.';
+      errEl.classList.remove('hidden');
+      document.getElementById('habitKeterangan').focus();
+      return;
+    }
   }
   errEl.classList.add('hidden');
 
-  const idx   = currentHabitIndex;
-  const date  = document.getElementById('jDate').value || todayStr();
-  const state = getHabitState(date);
-  state[idx]  = {
-    done: true,
-    waktu: document.getElementById('habitWaktu').value,
-    keterangan,
-    mood: currentHabitMood,
-    rating: parseInt(document.getElementById('habitRating').value),
-  };
+  const date   = document.getElementById('jDate').value || todayStr();
+  const waktu  = document.getElementById('habitWaktu').value;
+  const mood   = currentHabitMood;
+  const rating = parseInt(document.getElementById('habitRating').value);
+  const state  = getHabitState(date);
+
+  // Mark habit as done (indicator only); store agama/mapel for convenience on re-open
+  state[idx] = { done: true, agama, mapel, mood, rating };
   setHabitState(date, state);
+
+  // Create journal entry in DB_JOURNALS so it appears in Daftar Jurnal & Rekap
+  createJournalFromHabit(idx, date, { agama, sholat, mapel, topik, keterangan, waktu, mood, rating });
+
   closeHabitModal();
   renderHabitCards();
   renderHabitHistory();
-  showToast(`“${HABITS[idx].name}” berhasil dicatat! ✅`, 'success');
+  renderJournals();
+  showToast(`"${HABITS[idx].name}" berhasil dicatat! \u2705`, 'success');
+}
+
+function createJournalFromHabit(idx, date, data) {
+  const h = HABITS[idx];
+  const parts = [];
+  let subject = h.name;
+
+  if (idx === 1) { // Beribadah
+    parts.push('<b>Agama:</b> ' + escHtml(data.agama));
+    if (data.agama === 'Islam') {
+      parts.push('<b>Sholat:</b> ' + (data.sholat.length ? data.sholat.join(', ') : '\u2014'));
+    } else if (data.waktu) {
+      parts.push('<b>Waktu Ibadah:</b> ' + data.waktu);
+    }
+    if (data.keterangan) parts.push('<b>Keterangan:</b> ' + escHtml(data.keterangan));
+  } else if (idx === 4) { // Gemar Belajar
+    subject = data.mapel || h.name;
+    parts.push('<b>Mata Pelajaran:</b> ' + escHtml(data.mapel));
+    parts.push('<b>Yang Dipelajari:</b> ' + escHtml(data.topik));
+    if (data.waktu) parts.push('<b>Waktu:</b> ' + data.waktu);
+    if (data.keterangan) parts.push('<b>Keterangan:</b> ' + escHtml(data.keterangan));
+  } else {
+    if (data.waktu) parts.push('<b>Waktu:</b> ' + data.waktu);
+    parts.push('<b>Keterangan:</b> ' + escHtml(data.keterangan));
+  }
+
+  const entry = {
+    id:       Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+    title:    h.emoji + ' ' + h.name,
+    date,
+    subject,
+    category: h.name,
+    mood:     data.mood,
+    rating:   data.rating,
+    content:  parts.join('<br>'),
+    keypoints: '',
+    questions: '',
+  };
+
+  const journals = getJournals();
+  journals.unshift(entry);
+  saveJournals(journals);
 }
 
 function clearHabitDetail() {
@@ -539,12 +655,8 @@ function clearForm() {
 // ===== RENDER JOURNALS =====
 function renderJournals() {
   let journals = getJournals();
-  const subFilter = document.getElementById('filterSubject').value;
-  const catFilter = document.getElementById('filterCategory').value;
-  const sortOrd   = document.getElementById('sortOrder').value;
+  const sortOrd = document.getElementById('sortOrder').value;
 
-  if (subFilter) journals = journals.filter(j => j.subject === subFilter);
-  if (catFilter) journals = journals.filter(j => j.category === catFilter);
   journals = journals.slice().sort((a,b) =>
     sortOrd === 'newest' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date));
 
@@ -678,7 +790,6 @@ function deleteJournal(id) {
   journals = journals.filter(j => j.id !== id);
   saveJournals(journals);
   showToast('Jurnal dihapus.', 'error');
-  populateFilterSubjects();
   renderJournals();
 }
 

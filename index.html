@@ -4,7 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SEVANI — E-Jurnal 7 Kebiasaan Anak Indonesia Hebat</title>
-  <link rel="stylesheet" href="css.css" />
+  <link rel="icon" type="image/png" href="assets/7.png" />
+  <!-- CSS — beda file beda concern -->
+  <link rel="stylesheet" href="css/base.css?v=1.1" />
+  <link rel="stylesheet" href="css/auth.css?v=1.1" />
+  <link rel="stylesheet" href="css/layout.css?v=1.1" />
+  <link rel="stylesheet" href="css/modal.css?v=1.1" />
+  <link rel="stylesheet" href="css/habits.css?v=1.1" />
+  <link rel="stylesheet" href="css/pages.css?v=1.1" />
+  <link rel="stylesheet" href="css/rekap.css?v=1.1" />
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 </head>
@@ -19,8 +28,7 @@
     </div>
     <div class="auth-card">
       <div class="auth-logo">
-        <div class="logo-icon"><i class="fas fa-star"></i></div>
-        <h1>SEVANI</h1>
+        <img src="assets/sevani.png" alt="SEVANI" class="auth-logo-img" />
         <p>E-Jurnal <strong>7 Kebiasaan Anak Indonesia Hebat</strong></p>
         <p style="font-size:12px;color:var(--text-muted);margin-top:4px">Platform jurnal digital untuk siswa SMP</p>
       </div>
@@ -98,8 +106,7 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
-        <div class="logo-icon sm"><i class="fas fa-star"></i></div>
-        <span>SEVANI</span>
+        <img src="assets/sevani.png" alt="SEVANI" class="sidebar-logo-img" />
       </div>
       <div class="sidebar-user">
         <div class="avatar" id="sidebarAvatar"></div>
@@ -223,14 +230,6 @@
           <div class="card-header">
             <h3><i class="fas fa-book"></i> Jurnal Saya</h3>
             <div class="header-actions">
-              <select id="filterSubject" class="select-sm" onchange="renderJournals()">
-                <option value="">Semua Mapel</option>
-              </select>
-              <select id="filterCategory" class="select-sm" onchange="renderJournals()">
-                <option value="">Semua Kategori</option>
-                <option>Catatan</option><option>Refleksi</option><option>Tugas</option>
-                <option>Ujian</option><option>Praktikum</option><option>Diskusi</option>
-              </select>
               <select id="sortOrder" class="select-sm" onchange="renderJournals()">
                 <option value="newest">Terbaru</option>
                 <option value="oldest">Terlama</option>
@@ -426,12 +425,65 @@
           <div id="habitModalName" class="habit-modal-name"></div>
         </div>
       </div>
-      <div class="form-group" style="margin-top:22px">
+      <!-- === Beribadah Fields (shown only for Kebiasaan 2) === -->
+      <div id="habitBeribadahSection" class="hidden" style="margin-top:22px">
+        <div class="form-group">
+          <label><i class="fas fa-place-of-worship"></i> Agama <span class="req">*</span></label>
+          <select id="habitAgama" onchange="onAgamaChange(this.value)">
+            <option value="">— Pilih Agama —</option>
+            <option value="Islam">Islam</option>
+            <option value="Kristen Protestan">Kristen Protestan</option>
+            <option value="Katolik">Katolik</option>
+            <option value="Hindu">Hindu</option>
+            <option value="Buddha">Buddha</option>
+            <option value="Konghucu">Konghucu</option>
+          </select>
+        </div>
+        <div id="sholatSection" class="hidden">
+          <div class="form-group">
+            <label><i class="fas fa-pray"></i> Sholat yang Dikerjakan <span class="req">*</span></label>
+            <div class="sholat-checks">
+              <label class="sholat-check-item"><input type="checkbox" name="sholat" value="Subuh"> Subuh</label>
+              <label class="sholat-check-item"><input type="checkbox" name="sholat" value="Dzuhur"> Dzuhur</label>
+              <label class="sholat-check-item"><input type="checkbox" name="sholat" value="Ashar"> Ashar</label>
+              <label class="sholat-check-item"><input type="checkbox" name="sholat" value="Maghrib"> Maghrib</label>
+              <label class="sholat-check-item"><input type="checkbox" name="sholat" value="Isya"> Isya</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- === Gemar Belajar Fields (shown only for Kebiasaan 5) === -->
+      <div id="habitBelajarSection" class="hidden" style="margin-top:22px">
+        <div class="form-group">
+          <label><i class="fas fa-book-open"></i> Mata Pelajaran <span class="req">*</span></label>
+          <select id="habitMapel">
+            <option value="">— Pilih Mata Pelajaran —</option>
+            <option>Matematika</option>
+            <option>IPA (Ilmu Pengetahuan Alam)</option>
+            <option>IPS (Ilmu Pengetahuan Sosial)</option>
+            <option>Bahasa Indonesia</option>
+            <option>Bahasa Inggris</option>
+            <option>PKn (Pendidikan Kewarganegaraan)</option>
+            <option>Pendidikan Agama</option>
+            <option>PJOK</option>
+            <option>Seni Budaya</option>
+            <option>Prakarya</option>
+            <option>TIK / Informatika</option>
+            <option>Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label><i class="fas fa-pencil-alt"></i> Yang Dipelajari <span class="req">*</span></label>
+          <textarea id="habitTopikBelajar" rows="2" placeholder="Tulis topik atau materi yang kamu pelajari hari ini..."></textarea>
+        </div>
+      </div>
+      <!-- Waktu Pelaksanaan (hidden for Beribadah-Islam) -->
+      <div id="habitWaktuGroup" class="form-group" style="margin-top:22px">
         <label><i class="fas fa-clock"></i> Waktu Pelaksanaan <small style="font-weight:400;color:var(--text-muted)">(opsional)</small></label>
         <input type="time" id="habitWaktu" />
       </div>
       <div class="form-group">
-        <label><i class="fas fa-align-left"></i> Keterangan <span class="req">*</span></label>
+        <label><i class="fas fa-align-left"></i> Keterangan <span class="req" id="habitKetReq">*</span></label>
         <textarea id="habitKeterangan" placeholder="Ceritakan singkat bagaimana kamu melakukan kebiasaan ini hari ini..." rows="3"></textarea>
       </div>
       <div class="form-group">
@@ -475,6 +527,6 @@
     </div>
   </div>
 
-  <script src="index.js"></script>
+  <script src="index.js?v=1.1"></script>
 </body>
 </html>

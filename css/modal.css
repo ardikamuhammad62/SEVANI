@@ -1,0 +1,47 @@
+/* ===================================
+   SEVANI — MODALS & TOAST
+   Journal detail modal, confirm dialog, toast notification
+   =================================== */
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  backdrop-filter: blur(4px); animation: fadeIn .2s;
+}
+.modal-card {
+  background: var(--card); border-radius: 20px; padding: 32px; max-width: 680px; width: 100%;
+  max-height: 85vh; overflow-y: auto; position: relative; animation: slideUp .3s ease;
+  box-shadow: 0 24px 64px rgba(0,0,0,.2);
+}
+.modal-close {
+  position: absolute; top: 16px; right: 16px; width: 36px; height: 36px;
+  border: none; background: var(--bg); border-radius: 50%; cursor: pointer;
+  font-size: 16px; color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+}
+.modal-close:hover { background: rgba(239,68,68,.15); color: #ef4444; }
+.modal-actions { display: flex; gap: 10px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+
+/* Modal content */
+.modal-title { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 12px; padding-right: 40px; }
+.modal-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+.modal-section { margin-bottom: 20px; }
+.modal-section-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 8px; }
+.modal-body { font-size: 14px; line-height: 1.8; color: var(--text); }
+.modal-keypoints, .modal-questions {
+  background: var(--bg2); border-radius: var(--radius-sm); padding: 14px;
+  font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre-wrap;
+}
+.modal-mood-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.modal-mood { font-size: 32px; }
+.modal-date { font-size: 13px; color: var(--text-muted); }
+
+/* Confirm dialog */
+.confirm-card {
+  background: var(--card); border-radius: 20px; padding: 36px; max-width: 380px; width: 100%;
+  text-align: center; animation: slideUp .3s ease; box-shadow: 0 24px 64px rgba(0,0,0,.2);
+}
+.confirm-icon { font-size: 48px; color: var(--orange); margin-bottom: 14px; }
+.confirm-card h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.confirm-card p { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6; }
+.confirm-actions { display: flex; gap: 12px; justify-content: center; }
