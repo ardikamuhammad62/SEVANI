@@ -151,7 +151,7 @@ async function handleRegister(e) {
     const response = await fetch('api/register.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nama, kelas, username, password })
+      body: JSON.stringify({ nama, kelas, noAbsen, agama, username, password })
     });
 
     const result = await response.json();

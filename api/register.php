@@ -1,41 +1,47 @@
 <?php
-// register.php
-header("Access-Control-Allow-Origin: *");
+// api/register.php
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
 
 require 'koneksi.php';
 
-// Menangkap data JSON dari frontend
 $data = json_decode(file_get_contents("php://input"));
 
-if (!empty($data->nama) && !empty($data->kelas) && !empty($data->username) && !empty($data->password)) {
+// Tambahkan pengecekan untuk noAbsen dan agama
+if (!empty($data->nama) && !empty($data->kelas) && !empty($data->username) && !empty($data->password) && !empty($data->agama) && !empty($data->noAbsen)) {
     
     $nama = $conn->real_escape_string($data->nama);
     $kelas = $conn->real_escape_string($data->kelas);
+    $no_absen = (int)$data->noAbsen;
+    $agama = $conn->real_escape_string($data->agama);
     $username = $conn->real_escape_string($data->username);
     $password = $data->password;
 
-    // Cek apakah username sudah ada
     $cek_username = $conn->query("SELECT id FROM users WHERE username = '$username'");
     if ($cek_username->num_rows > 0) {
         echo json_encode(["status" => "error", "message" => "Username sudah digunakan. Pilih yang lain."]);
         exit();
     }
 
-    // Enkripsi password
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-    // Insert ke database
-    $query = "INSERT INTO users (nama, kelas, username, password) VALUES ('$nama', '$kelas', '$username', '$hashed_password')";
+    // Masukkan no_absen dan agama ke query INSERT
+    $query = "INSERT INTO users (nama, kelas, no_absen, agama, username, password) 
+              VALUES ('$nama', '$kelas', $no_absen, '$agama', '$username', '$hashed_password')";
     
     if ($conn->query($query) === TRUE) {
+        // Ambil ID yang baru saja dibuat
+        $new_id = $conn->insert_id;
+        
         echo json_encode([
             "status" => "success", 
             "message" => "Pendaftaran berhasil!",
             "user" => [
+                "id" => $new_id,
                 "nama" => $nama,
                 "kelas" => $kelas,
+                "noAbsen" => $no_absen,
+                "agama" => $agama,
                 "username" => $username
             ]
         ]);
@@ -43,7 +49,7 @@ if (!empty($data->nama) && !empty($data->kelas) && !empty($data->username) && !e
         echo json_encode(["status" => "error", "message" => "Gagal mendaftar: " . $conn->error]);
     }
 } else {
-    echo json_encode(["status" => "error", "message" => "Data tidak lengkap."]);
+    echo json_encode(["status" => "error", "message" => "Semua data wajib diisi."]);
 }
 
 $conn->close();

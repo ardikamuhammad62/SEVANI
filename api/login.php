@@ -1,6 +1,5 @@
 <?php
-// login.php
-header("Access-Control-Allow-Origin: *");
+// api/login.php
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
 
@@ -12,14 +11,13 @@ if (!empty($data->username) && !empty($data->password)) {
     $username = $conn->real_escape_string($data->username);
     $password = $data->password;
 
-    // Cari user berdasarkan username
-    $query = "SELECT id, nama, kelas, username, password FROM users WHERE username = '$username'";
+    // Tambahkan no_absen dan agama pada bagian SELECT
+    $query = "SELECT id, nama, kelas, no_absen, agama, username, password FROM users WHERE username = '$username'";
     $result = $conn->query($query);
 
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
         
-        // Verifikasi kecocokan password
         if (password_verify($password, $row['password'])) {
             echo json_encode([
                 "status" => "success",
@@ -28,6 +26,8 @@ if (!empty($data->username) && !empty($data->password)) {
                     "id" => $row['id'],
                     "nama" => $row['nama'],
                     "kelas" => $row['kelas'],
+                    "noAbsen" => $row['no_absen'],
+                    "agama" => $row['agama'],
                     "username" => $row['username']
                 ]
             ]);
