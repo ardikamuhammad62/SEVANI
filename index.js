@@ -32,47 +32,49 @@ let pendingDeleteId  = null;
 let currentHabitIndex = null;
 let currentHabitMood  = '😊';
 
+// State Lokal pengganti localStorage
+let localJournals = []; 
+let localHabits = {};
+
 // ===== STORAGE HELPERS =====
-const getUsers    = () => JSON.parse(localStorage.getItem(DB_USERS)) || [];
-const saveUsers   = (u) => localStorage.setItem(DB_USERS, JSON.stringify(u));
 const getSession  = () => localStorage.getItem(DB_SESSION);
 const setSession  = (u) => localStorage.setItem(DB_SESSION, u);
 const clearSession= () => localStorage.removeItem(DB_SESSION);
 
 function getJournals() {
-  const all = JSON.parse(localStorage.getItem(DB_JOURNALS)) || {};
-  return all[currentUser?.username] || [];
-}
-function saveJournals(list) {
-  const all = JSON.parse(localStorage.getItem(DB_JOURNALS)) || {};
-  all[currentUser.username] = list;
-  localStorage.setItem(DB_JOURNALS, JSON.stringify(all));
+  return localJournals;
 }
 
-// ===== HABIT STORAGE =====
 function getHabitData() {
-  const all = JSON.parse(localStorage.getItem(DB_HABITS)) || {};
-  return all[currentUser?.username] || {};
+  return localHabits;
 }
-function saveHabitData(data) {
-  const all = JSON.parse(localStorage.getItem(DB_HABITS)) || {};
-  all[currentUser.username] = data;
-  localStorage.setItem(DB_HABITS, JSON.stringify(all));
-}
+
 function emptyHabitEntry() {
   return { done: false, agama: '', mapel: '', mood: '😊', rating: 7 };
 }
+
 function getHabitState(date) {
-  const raw = getHabitData()[date];
+  const raw = localHabits[date];
   if (!raw) return Array(7).fill(null).map(emptyHabitEntry);
   return raw.map(e => (typeof e === 'boolean' || e === null)
     ? { ...emptyHabitEntry(), done: !!e }
     : { ...emptyHabitEntry(), ...e });
 }
-function setHabitState(date, state) {
-  const data = getHabitData();
-  data[date] = state;
-  saveHabitData(data);
+
+// Menyimpan state kebiasaan ke Database
+async function setHabitState(date, state) {
+  localHabits[date] = state; // Update UI langsung
+  try {
+    await fetch('api/save_habit.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+        tanggal: date,
+        habit_data: state
+      })
+    });
+  } catch(e) { console.error('Gagal menyimpan habit:', e); }
 }
 
 // ===== INIT =====
@@ -105,38 +107,65 @@ function switchTab(tab) {
   clearError('loginError'); clearError('registerError');
 }
 
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault();
   const username = document.getElementById('loginUsername').value.trim();
   const password = document.getElementById('loginPassword').value;
-  const users = getUsers();
-  const user = users.find(u => u.username === username && u.password === password);
-  if (!user) { showError('loginError', 'Username atau password salah.'); return; }
-  currentUser = user;
-  setSession(user.username);
-  launchApp();
+
+  try {
+    const response = await fetch('api/login.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      currentUser = result.user;
+      setSession(result.user.username); // Tetap simpan sesi lokal untuk menandai user sedang login
+      launchApp();
+    } else {
+      showError('loginError', result.message);
+    }
+  } catch (error) {
+    showError('loginError', 'Terjadi kesalahan pada server.');
+    console.error('Error:', error);
+  }
 }
 
-function handleRegister(e) {
+async function handleRegister(e) {
   e.preventDefault();
-  const name     = document.getElementById('regName').value.trim();
+  const nama     = document.getElementById('regName').value.trim(); // Sesuaikan variabel nama
   const kelas    = document.getElementById('regClass').value.trim();
   const username = document.getElementById('regUsername').value.trim();
   const password = document.getElementById('regPassword').value;
 
-  if (password.length < 6) { showError('registerError', 'Password minimal 6 karakter.'); return; }
-
-  const users = getUsers();
-  if (users.find(u => u.username === username)) {
-    showError('registerError', 'Username sudah digunakan. Pilih yang lain.');
-    return;
+  if (password.length < 6) { 
+    showError('registerError', 'Password minimal 6 karakter.'); 
+    return; 
   }
-  const newUser = { name, kelas, username, password };
-  users.push(newUser);
-  saveUsers(users);
-  currentUser = newUser;
-  setSession(username);
-  launchApp();
+
+  try {
+    const response = await fetch('api/register.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nama, kelas, username, password })
+    });
+
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      currentUser = result.user;
+      setSession(result.user.username);
+      launchApp();
+    } else {
+      showError('registerError', result.message);
+    }
+  } catch (error) {
+    showError('registerError', 'Terjadi kesalahan pada server.');
+    console.error('Error:', error);
+  }
 }
 
 function handleLogout() {
@@ -173,10 +202,23 @@ function clearError(id) {
 }
 
 // ===== LAUNCH APP =====
-function launchApp() {
+async function launchApp() {
   document.getElementById('authScreen').classList.add('hidden');
   document.getElementById('appScreen').classList.remove('hidden');
   updateUserUI();
+  
+  // Mengambil data dari MySQL saat aplikasi berjalan
+  try {
+    const res = await fetch('api/get_data.php?user_id=' + currentUser.id);
+    const data = await res.json();
+    if (data.status === 'success') {
+      localHabits = data.habits || {};
+      localJournals = data.journals || [];
+    }
+  } catch (error) {
+    console.error("Gagal memuat data dari server:", error);
+  }
+
   document.getElementById('jDate').value = todayStr();
   showPage('dashboard');
 }
@@ -537,7 +579,7 @@ function saveHabitDetail() {
   showToast(`"${HABITS[idx].name}" berhasil dicatat! \u2705`, 'success');
 }
 
-function createJournalFromHabit(idx, date, data) {
+async function createJournalFromHabit(idx, date, data) {
   const h = HABITS[idx];
   const parts = [];
   let subject = h.name;
@@ -564,8 +606,8 @@ function createJournalFromHabit(idx, date, data) {
   const entry = {
     id:       Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
     title:    h.emoji + ' ' + h.name,
-    date,
-    subject,
+    date:     date,
+    subject:  subject,
     category: h.name,
     mood:     data.mood,
     rating:   data.rating,
@@ -574,9 +616,19 @@ function createJournalFromHabit(idx, date, data) {
     questions: '',
   };
 
-  const journals = getJournals();
-  journals.unshift(entry);
-  saveJournals(journals);
+  localJournals.unshift(entry); // Update state lokal
+
+  // Simpan ke MySQL
+  try {
+    await fetch('api/save_journal.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+        ...entry
+      })
+    });
+  } catch(e) { console.error('Gagal menyimpan jurnal ke DB:', e); }
 }
 
 function clearHabitDetail() {
@@ -783,14 +835,29 @@ function closeConfirm() {
   document.body.style.overflow = '';
   pendingDeleteId = null;
 }
-function deleteJournal(id) {
+async function deleteJournal(id) {
   closeConfirm();
   closeModalBtn();
-  let journals = getJournals();
-  journals = journals.filter(j => j.id !== id);
-  saveJournals(journals);
+  
+  // Hapus dari state lokal
+  localJournals = localJournals.filter(j => j.id !== id);
+  
+  // Hapus dari MySQL
+  try {
+    await fetch('api/delete_journal.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, user_id: currentUser.id })
+    });
+  } catch(e) { console.error('Gagal menghapus jurnal dari DB:', e); }
+
   showToast('Jurnal dihapus.', 'error');
   renderJournals();
+  
+  // Refresh dashboard kalau menghapus dari halaman dashboard
+  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) {
+      renderDashboard();
+  }
 }
 
 // ===== REKAP =====
@@ -996,42 +1063,52 @@ function renderProfile() {
   document.getElementById('pSubjects').textContent = subjects.length;
 }
 
-function saveProfile(e) {
+async function saveProfile(e) {
   e.preventDefault();
-  const name     = document.getElementById('editName').value.trim();
+  const nama     = document.getElementById('editName').value.trim();
   const kelas    = document.getElementById('editClass').value.trim();
   const username = document.getElementById('editUsername').value.trim();
   const password = document.getElementById('editPassword').value;
 
-  const users = getUsers();
-  const idx = users.findIndex(u => u.username === currentUser.username);
-  if (idx < 0) return;
+  // Kita tidak perlu lagi mengecek localStorage
+  try {
+    const response = await fetch('api/update_profile.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: currentUser.id, // ID user yang sedang aktif
+        nama: nama,
+        kelas: kelas,
+        username: username,
+        password: password
+      })
+    });
 
-  // username conflict check
-  if (username !== currentUser.username && users.find(u => u.username === username)) {
-    showToast('Username sudah digunakan!', 'error'); return;
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      // Jika username berubah, perbarui session lokal
+      if (username !== currentUser.username) {
+        setSession(username);
+      }
+
+      // Perbarui state currentUser dengan data terbaru dari server
+      currentUser = result.user;
+      
+      // Perbarui tampilan UI (Sidebar, Topbar, dan Form Profil)
+      updateUserUI();
+      renderProfile();
+      
+      showToast('Profil berhasil disimpan! ✅', 'success');
+      document.getElementById('editPassword').value = ''; // Kosongkan field password setelah sukses
+    } else {
+      showToast(result.message, 'error');
+    }
+  } catch (error) {
+    showToast('Terjadi kesalahan pada server.', 'error');
+    console.error('Error:', error);
   }
-
-  // If username changed, migrate journal data
-  if (username !== currentUser.username) {
-    const all = JSON.parse(localStorage.getItem(DB_JOURNALS)) || {};
-    all[username] = all[currentUser.username] || [];
-    delete all[currentUser.username];
-    localStorage.setItem(DB_JOURNALS, JSON.stringify(all));
-    setSession(username);
-  }
-
-  users[idx].name = name;
-  users[idx].kelas = kelas;
-  users[idx].username = username;
-  if (password) users[idx].password = password;
-  saveUsers(users);
-  currentUser = users[idx];
-  updateUserUI();
-  renderProfile();
-  showToast('Profil berhasil disimpan! ✅', 'success');
 }
-
 // ===== EXPORT =====
 function exportJSON() {
   const journals = getJournals();
@@ -1067,11 +1144,36 @@ function downloadBlob(blob, filename) {
   document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
-function deleteAllData() {
-  if (!confirm(`Yakin hapus semua ${getJournals().length} jurnal kamu? Tindakan ini tidak bisa dibatalkan!`)) return;
-  saveJournals([]);
-  showToast('Semua jurnal dihapus.', 'error');
-  renderProfile();
+async function deleteAllData() {
+  if (!confirm(`Yakin hapus semua ${localJournals.length} jurnal kamu? Tindakan ini tidak bisa dibatalkan!`)) return;
+
+  try {
+    const response = await fetch('api/delete_all_data.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: currentUser.id })
+    });
+
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      // Kosongkan data lokal agar UI langsung update tanpa harus refresh
+      localJournals = [];
+      localHabits = {};
+      
+      showToast('Semua data berhasil dihapus.', 'success');
+      
+      // Update tampilan halaman
+      renderProfile();
+      renderHabitCards();
+      renderHabitHistory();
+    } else {
+      showToast(result.message, 'error');
+    }
+  } catch (error) {
+    showToast('Terjadi kesalahan pada server.', 'error');
+    console.error('Error:', error);
+  }
 }
 
 // ===== PRINT =====
