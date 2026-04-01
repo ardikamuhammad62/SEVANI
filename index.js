@@ -21,16 +21,15 @@ const HABITS = [
   { num: 6, emoji: '🤝', name: 'Bermasyarakat' },
   { num: 7, emoji: '😴', name: 'Tidur Tepat Waktu' },
 ];
+const HABIT_NAMES = new Set(HABITS.map(h => h.name));
 
 // ===== STATE =====
 let currentUser      = null;
 let currentView      = 'grid';
-let selectedMood     = '😊';
 let searchFilter     = 'all';
 let currentModalId   = null;
 let pendingDeleteId  = null;
 let currentHabitIndex = null;
-let currentHabitMood  = '😊';
 
 // State Lokal pengganti localStorage
 let localJournals = []; 
@@ -50,7 +49,7 @@ function getHabitData() {
 }
 
 function emptyHabitEntry() {
-  return { done: false, agama: '', mapel: '', mood: '😊', rating: 7 };
+  return { done: false, waktu: '', keterangan: '', mapel: '' };
 }
 
 function getHabitState(date) {
@@ -138,7 +137,9 @@ async function handleRegister(e) {
   e.preventDefault();
   const nama     = document.getElementById('regName').value.trim(); // Sesuaikan variabel nama
   const kelas    = document.getElementById('regClass').value.trim();
+  const noAbsen  = document.getElementById('regNumber').value.trim();
   const username = document.getElementById('regUsername').value.trim();
+  const agama    = document.getElementById('regReligion').value;
   const password = document.getElementById('regPassword').value;
 
   if (password.length < 6) { 
@@ -220,14 +221,17 @@ async function launchApp() {
   }
 
   document.getElementById('jDate').value = todayStr();
-  showPage('dashboard');
+  showPage('write');
 }
 
 function updateUserUI() {
   const initials = getInitials(currentUser.name);
   document.getElementById('sidebarAvatar').textContent = initials;
   document.getElementById('sidebarName').textContent = currentUser.name;
-  document.getElementById('sidebarClass').textContent = currentUser.kelas;
+  const kelasInfo = currentUser.noAbsen
+    ? `${currentUser.kelas} | Absen ${currentUser.noAbsen}`
+    : currentUser.kelas;
+  document.getElementById('sidebarClass').textContent = kelasInfo;
   document.getElementById('topbarAvatar').textContent = initials;
 }
 
@@ -242,21 +246,23 @@ function showPage(page) {
     p.classList.toggle('hidden', p.id !== 'page-' + page);
   });
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const map = { dashboard: 0, write: 1, rekap: 2, search: 3, profile: 4 };
+  const map = { write: 0, history: 1, profile: 2 };
   const idx = map[page];
   if (idx !== undefined) {
     document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
   }
 
-  const titles = { dashboard: 'Dashboard', write: 'Tulis Jurnal', journals: 'Jurnal Saya', rekap: 'Rekap Jurnal', search: 'Cari Jurnal', profile: 'Profil' };
+  const titles = { history: 'History', write: 'Tulis Jurnal', journals: 'Jurnal Saya', profile: 'Profil' };
   document.getElementById('topbarTitle').textContent = titles[page] || '';
 
   closeSidebarMobile();
 
-  if (page === 'dashboard')  renderDashboard();
+  if (page === 'history') {
+    renderDashboard();
+    initRekapPage();
+  }
   if (page === 'journals')   renderJournals();
   if (page === 'profile')    renderProfile();
-  if (page === 'rekap')      initRekapPage();
   if (page === 'write') {
     renderHabitCards();
     renderJournals();
@@ -299,6 +305,24 @@ function getWeekStart() {
   d.setDate(diff); return d;
 }
 
+// Hitung mapel hanya dari jurnal "Gemar Belajar", bukan dari semua kebiasaan.
+function getJournalSubject(j) {
+  const category = String(j.category || '').trim();
+  const subject = String(j.subject || '').trim();
+
+  if (category === 'Gemar Belajar' && subject && !HABIT_NAMES.has(subject)) {
+    return subject;
+  }
+
+  const content = String(j.content || '');
+  const m = content.match(/Mata Pelajaran:\s*<\/b>\s*([^<\n]+)/i);
+  return m?.[1]?.trim() || '';
+}
+
+function getUniqueSubjects(journals) {
+  return [...new Set(journals.map(getJournalSubject).filter(Boolean))];
+}
+
 // ===== DASHBOARD =====
 function renderDashboard() {
   const now = new Date();
@@ -320,7 +344,7 @@ function renderDashboard() {
   document.getElementById('statStreak').textContent = calcStreak(journals);
 
   // Subjects
-  const subjects = [...new Set(journals.map(j => j.subject))];
+  const subjects = getUniqueSubjects(journals);
   document.getElementById('statSubjects').textContent = subjects.length;
 
   // Recent
@@ -338,23 +362,12 @@ function renderDashboard() {
     `).join('');
   }
 
-  // Mood bars
-  const moods = ['😄','😊','😐','😕','😞'];
-  const moodCounts = {};
-  moods.forEach(m => moodCounts[m] = 0);
-  weekJournals.forEach(j => { if (moodCounts[j.mood] !== undefined) moodCounts[j.mood]++; });
-  const maxMood = Math.max(...Object.values(moodCounts), 1);
-  document.getElementById('moodBars').innerHTML = moods.map(m => `
-    <div class="mood-bar-row">
-      <span class="mood-emoji">${m}</span>
-      <div class="mood-bar-bg"><div class="mood-bar-fill" style="width:${(moodCounts[m]/maxMood)*100}%"></div></div>
-      <span class="mood-count">${moodCounts[m]}</span>
-    </div>
-  `).join('');
-
   // Subject distribution
   const subjectCount = {};
-  journals.forEach(j => { subjectCount[j.subject] = (subjectCount[j.subject] || 0) + 1; });
+  journals
+    .map(getJournalSubject)
+    .filter(Boolean)
+    .forEach(sub => { subjectCount[sub] = (subjectCount[sub] || 0) + 1; });
   const sortedSubs = Object.entries(subjectCount).sort((a,b) => b[1]-a[1]).slice(0, 6);
   const maxSub = sortedSubs.length ? sortedSubs[0][1] : 1;
   document.getElementById('subjectBars').innerHTML = sortedSubs.length
@@ -381,21 +394,6 @@ function calcStreak(journals) {
   }
   return streak;
 }
-
-// ===== HABIT MOOD SELECTOR =====
-document.addEventListener('click', (e) => {
-  const btn = e.target.closest('.habit-mood-btn');
-  if (!btn) return;
-  document.querySelectorAll('.habit-mood-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  currentHabitMood = btn.dataset.mood;
-});
-
-// Default habit mood on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-  const def = document.querySelector('.habit-mood-btn[data-mood="😊"]');
-  if (def) def.classList.add('selected');
-});
 
 // ===== HABIT CARDS =====
 function renderHabitCards() {
@@ -450,13 +448,6 @@ function openHabitModal(index) {
   document.getElementById('habitKeterangan').value  = '';
   document.getElementById('habitModalError').classList.add('hidden');
 
-  // Default mood & rating
-  currentHabitMood = '😊';
-  document.querySelectorAll('.habit-mood-btn').forEach(b =>
-    b.classList.toggle('selected', b.dataset.mood === '😊'));
-  document.getElementById('habitRating').value           = 7;
-  document.getElementById('habitRatingBadge').textContent = 7;
-
   // Show/hide special sections
   const isBeribadah = index === 1;
   const isBelajar   = index === 4;
@@ -464,8 +455,8 @@ function openHabitModal(index) {
   document.getElementById('habitBelajarSection').classList.toggle('hidden', !isBelajar);
 
   if (isBeribadah) {
-    const agama = entry.agama || '';
-    document.getElementById('habitAgama').value = agama;
+    const agama = currentUser?.agama || '';
+    document.getElementById('habitReligionInfo').value = agama || 'Tidak Diisi';
     document.querySelectorAll('input[name="sholat"]').forEach(cb => cb.checked = false);
     onAgamaChange(agama);
   } else {
@@ -497,7 +488,7 @@ function habitModalOutside(e) {
 
 function onAgamaChange(agama) {
   document.getElementById('sholatSection').classList.toggle('hidden', agama !== 'Islam');
-  document.getElementById('habitWaktuGroup').classList.toggle('hidden', agama === 'Islam');
+  document.getElementById('habitWaktuGroup').classList.remove('hidden');
 }
 
 function saveHabitDetail() {
@@ -510,12 +501,7 @@ function saveHabitDetail() {
   let agama = '', sholat = [], mapel = '', topik = '';
 
   if (isBeribadah) {
-    agama = document.getElementById('habitAgama').value;
-    if (!agama) {
-      errEl.textContent = 'Pilih agama terlebih dahulu.';
-      errEl.classList.remove('hidden');
-      return;
-    }
+    agama = currentUser?.agama || 'Tidak Diisi';
     if (agama === 'Islam') {
       sholat = [...document.querySelectorAll('input[name="sholat"]:checked')].map(cb => cb.value);
       if (!sholat.length) {
@@ -561,16 +547,14 @@ function saveHabitDetail() {
 
   const date   = document.getElementById('jDate').value || todayStr();
   const waktu  = document.getElementById('habitWaktu').value;
-  const mood   = currentHabitMood;
-  const rating = parseInt(document.getElementById('habitRating').value);
   const state  = getHabitState(date);
 
-  // Mark habit as done (indicator only); store agama/mapel for convenience on re-open
-  state[idx] = { done: true, agama, mapel, mood, rating };
+  // Mark habit as done (indicator only)
+  state[idx] = { done: true, waktu, keterangan, mapel };
   setHabitState(date, state);
 
   // Create journal entry in DB_JOURNALS so it appears in Daftar Jurnal & Rekap
-  createJournalFromHabit(idx, date, { agama, sholat, mapel, topik, keterangan, waktu, mood, rating });
+  createJournalFromHabit(idx, date, { agama, sholat, mapel, topik, keterangan, waktu });
 
   closeHabitModal();
   renderHabitCards();
@@ -588,9 +572,8 @@ async function createJournalFromHabit(idx, date, data) {
     parts.push('<b>Agama:</b> ' + escHtml(data.agama));
     if (data.agama === 'Islam') {
       parts.push('<b>Sholat:</b> ' + (data.sholat.length ? data.sholat.join(', ') : '\u2014'));
-    } else if (data.waktu) {
-      parts.push('<b>Waktu Ibadah:</b> ' + data.waktu);
     }
+    if (data.waktu) parts.push('<b>Waktu Ibadah:</b> ' + data.waktu);
     if (data.keterangan) parts.push('<b>Keterangan:</b> ' + escHtml(data.keterangan));
   } else if (idx === 4) { // Gemar Belajar
     subject = data.mapel || h.name;
@@ -609,8 +592,8 @@ async function createJournalFromHabit(idx, date, data) {
     date:     date,
     subject:  subject,
     category: h.name,
-    mood:     data.mood,
-    rating:   data.rating,
+    mood:     '😊',
+    rating:   7,
     content:  parts.join('<br>'),
     keypoints: '',
     questions: '',
@@ -661,11 +644,6 @@ function renderHabitHistory() {
     const state     = getHabitState(date);
     const doneCount = state.filter(e => e.done).length;
     const allDone   = doneCount === 7;
-    const domMood   = getDominantMood(state.filter(e => e.done));
-    const ratings   = state.filter(e => e.done && e.rating).map(e => e.rating);
-    const avgRating = ratings.length
-      ? (ratings.reduce((s, r) => s + r, 0) / ratings.length).toFixed(1)
-      : null;
     return `
       <div class="habit-history-card" onclick="openHabitDayView('${date}')">
         <div class="hh-date-str">${formatDateShort(date)}</div>
@@ -674,7 +652,7 @@ function renderHabitHistory() {
             <i class="fas fa-${allDone ? 'check-circle' : 'circle-half-stroke'}"></i>
             ${doneCount}/7 Selesai
           </span>
-          <span class="hh-day-meta">${domMood || ''}${avgRating ? ` ⭐ ${avgRating}` : ''}</span>
+          <span class="hh-day-meta">${allDone ? 'Lengkap' : 'Sebagian'}</span>
         </div>
         <div class="hh-emojis">
           ${HABITS.map((h, i) =>
@@ -731,12 +709,10 @@ function buildJournalCard(j) {
     <div class="journal-card" onclick="openModal('${j.id}')">
       <div class="jcard-head">
         <div class="jcard-title">${escHtml(j.title)}</div>
-        <span class="jcard-mood">${j.mood || '😊'}</span>
       </div>
       <div class="jcard-meta">
         <span class="badge badge-subject"><i class="fas fa-book"></i> ${escHtml(j.subject)}</span>
         <span class="badge badge-category">${escHtml(j.category)}</span>
-        <span class="badge badge-rating">⭐ ${j.rating}/10</span>
       </div>
       <div class="jcard-preview">${escHtml(preview)}</div>
       <div class="jcard-footer">
@@ -777,7 +753,6 @@ function openModal(id) {
 
   document.getElementById('modalContent').innerHTML = `
     <div class="modal-mood-row">
-      <span class="modal-mood">${j.mood || '😊'}</span>
       <div>
         <div class="modal-title">${escHtml(j.title)}</div>
         <div class="modal-date"><i class="fas fa-calendar"></i> ${formatDate(j.date)}</div>
@@ -786,7 +761,6 @@ function openModal(id) {
     <div class="modal-meta">
       <span class="badge badge-subject"><i class="fas fa-book"></i> ${escHtml(j.subject)}</span>
       <span class="badge badge-category">${escHtml(j.category)}</span>
-      <span class="badge badge-rating">⭐ ${j.rating}/10</span>
     </div>
     <div class="modal-section">
       <div class="modal-section-title">Catatan</div>
@@ -861,19 +835,18 @@ async function deleteJournal(id) {
 }
 
 // ===== REKAP =====
-const MOOD_LABELS = { '😄': 'Sangat Baik', '😊': 'Baik', '😐': 'Biasa', '😕': 'Kurang', '😞': 'Buruk' };
 
 function initRekapPage() {
   const startEl = document.getElementById('rekapStart');
   const endEl   = document.getElementById('rekapEnd');
-  // Default: current month
-  if (!startEl.value && !endEl.value) {
+  // Default: current month, and always refresh recap when History page opens
+  if (!startEl.value || !endEl.value) {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
     startEl.value = firstDay.toISOString().split('T')[0];
-    endEl.value   = todayStr();
-    renderRekap();
+    endEl.value = todayStr();
   }
+  renderRekap();
 }
 
 function renderRekap() {
@@ -908,10 +881,9 @@ function renderRekap() {
   emptyEl.classList.add('hidden');
 
   // Stats
-  const avgRating = (journals.reduce((s, j) => s + (j.rating || 0), 0) / journals.length).toFixed(1);
-  const subjects  = [...new Set(journals.map(j => j.subject))];
-  const domMood   = getDominantMood(journals);
+  const subjects  = getUniqueSubjects(journals);
   const totalDays = [...new Set(journals.map(j => j.date))].length;
+  const avgPerDay = (journals.length / Math.max(totalDays, 1)).toFixed(1);
 
   statsEl.style.display = 'grid';
   statsEl.innerHTML = `
@@ -937,10 +909,10 @@ function renderRekap() {
       </div>
     </div>
     <div class="stat-card orange">
-      <div class="stat-icon" style="font-size:26px">${domMood}</div>
+      <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
       <div class="stat-info">
-        <div class="stat-num" style="font-size:16px;line-height:1.3">${MOOD_LABELS[domMood] || 'Baik'}</div>
-        <div class="stat-label">Mood Dominan</div>
+        <div class="stat-num">${avgPerDay}</div>
+        <div class="stat-label">Rata-rata / Hari</div>
       </div>
     </div>
   `;
@@ -967,12 +939,6 @@ function renderRekap() {
       </div>
     </div>
   `).join('');
-}
-
-function getDominantMood(journals) {
-  const cnt = {};
-  journals.forEach(j => { const m = j.mood || '😊'; cnt[m] = (cnt[m] || 0) + 1; });
-  return Object.entries(cnt).sort((a, b) => b[1] - a[1])[0]?.[0] || '😊';
 }
 
 function rekapToday() {
@@ -1057,7 +1023,7 @@ function renderProfile() {
   document.getElementById('editPassword').value = '';
 
   const journals = getJournals();
-  const subjects = [...new Set(journals.map(j => j.subject))];
+  const subjects = getUniqueSubjects(journals);
   document.getElementById('pTotal').textContent = journals.length;
   document.getElementById('pStreak').textContent = calcStreak(journals);
   document.getElementById('pSubjects').textContent = subjects.length;
@@ -1196,7 +1162,7 @@ function printJournal(id) {
     </style>
   </head><body>
     <h1>${escHtml(j.title)}</h1>
-    <p class="meta">${j.mood} &nbsp;|&nbsp; ${formatDate(j.date)} &nbsp;|&nbsp; ${escHtml(j.subject)} &nbsp;|&nbsp; ${escHtml(j.category)} &nbsp;|&nbsp; Rating: ${j.rating}/10</p>
+    <p class="meta">${formatDate(j.date)} &nbsp;|&nbsp; ${escHtml(j.subject)} &nbsp;|&nbsp; ${escHtml(j.category)}</p>
     <div class="section">
       <div class="section-title">Catatan</div>
       <div>${j.content}</div>

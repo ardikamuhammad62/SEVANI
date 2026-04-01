@@ -64,8 +64,24 @@
                 <input type="text" id="regClass" placeholder="Contoh: 7A, 8B, 9C" required />
         </div>
         <div class="form-group">
+          <label><i class="fas fa-list-ol"></i> Nomer Absen</label>
+          <input type="number" id="regNumber" min="1" placeholder="Contoh: 12" required />
+        </div>
+        <div class="form-group">
           <label><i class="fas fa-user"></i> Username</label>
           <input type="text" id="regUsername" placeholder="Buat username unik" required />
+        </div>
+        <div class="form-group">
+          <label><i class="fas fa-place-of-worship"></i> Agama</label>
+          <select id="regReligion" required>
+            <option value="">-- Pilih Agama --</option>
+            <option value="Islam">Islam</option>
+            <option value="Kristen Protestan">Kristen Protestan</option>
+            <option value="Katolik">Katolik</option>
+            <option value="Hindu">Hindu</option>
+            <option value="Buddha">Buddha</option>
+            <option value="Konghucu">Konghucu</option>
+          </select>
         </div>
         <div class="form-group">
           <label><i class="fas fa-lock"></i> Password</label>
@@ -110,10 +126,8 @@
         </div>
       </div>
       <nav class="sidebar-nav">
-        <a class="nav-item active" onclick="showPage('dashboard')"><i class="fas fa-home"></i><span>Dashboard</span></a>
-        <a class="nav-item" onclick="showPage('write')"><i class="fas fa-pen-nib"></i><span>Tulis Jurnal</span></a>
-        <a class="nav-item" onclick="showPage('rekap')"><i class="fas fa-chart-bar"></i><span>Rekap</span></a>
-        <a class="nav-item" onclick="showPage('search')"><i class="fas fa-search"></i><span>Cari Jurnal</span></a>
+        <a class="nav-item active" onclick="showPage('write')"><i class="fas fa-pen-nib"></i><span>Tulis Jurnal</span></a>
+        <a class="nav-item" onclick="showPage('history')"><i class="fas fa-clock-rotate-left"></i><span>History</span></a>
         <a class="nav-item" onclick="showPage('profile')"><i class="fas fa-user-circle"></i><span>Profil</span></a>
       </nav>
       <button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i><span>Keluar</span></button>
@@ -122,7 +136,7 @@
     <!-- Mobile Top Bar -->
     <div class="topbar">
       <button class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="topbar-title" id="topbarTitle">Tulis Jurnal</div>
       <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Ganti Tema"><i class="fas fa-moon" id="themeIcon"></i></button>
       <div class="topbar-avatar" id="topbarAvatar" onclick="showPage('profile')"></div>
     </div>
@@ -130,8 +144,8 @@
     <!-- Main Content -->
     <main class="main-content" id="mainContent">
 
-      <!-- ===== DASHBOARD PAGE ===== -->
-      <div id="page-dashboard" class="page active">
+      <!-- ===== HISTORY PAGE (Dashboard + Rekap) ===== -->
+      <div id="page-history" class="page hidden">
         <div class="page-header">
           <div>
             <h2 id="greetingText">Selamat Pagi!</h2>
@@ -172,14 +186,8 @@
           </div>
         </div>
 
-        <!-- Mood Chart & Recent -->
+        <!-- Recent Journals -->
         <div class="dashboard-grid">
-          <div class="card">
-            <div class="card-header">
-              <h3><i class="fas fa-smile"></i> Mood Minggu Ini</h3>
-            </div>
-            <div class="mood-bars" id="moodBars"></div>
-          </div>
           <div class="card">
             <div class="card-header">
               <h3><i class="fas fa-clock"></i> Jurnal Terbaru</h3>
@@ -195,6 +203,42 @@
             <h3><i class="fas fa-chart-pie"></i> Distribusi Mata Pelajaran</h3>
           </div>
           <div id="subjectBars" class="subject-bars"></div>
+        </div>
+
+        <div class="card mt-20 rekap-filter">
+          <div class="card-header">
+            <h3><i class="fas fa-chart-line"></i> Rekap Jurnal</h3>
+          </div>
+          <div class="rekap-filter-row">
+            <div class="form-group">
+              <label><i class="fas fa-calendar-day"></i> Dari Tanggal</label>
+              <input type="date" id="rekapStart" />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-calendar-day"></i> Sampai Tanggal</label>
+              <input type="date" id="rekapEnd" />
+            </div>
+            <div class="rekap-filter-actions">
+              <button class="btn-primary" onclick="renderRekap()"><i class="fas fa-search"></i> Tampilkan</button>
+              <button class="btn-secondary" onclick="rekapToday()"><i class="fas fa-calendar-check"></i> Hari Ini</button>
+              <button class="btn-secondary" onclick="rekapThisWeek()"><i class="fas fa-calendar-week"></i> Minggu Ini</button>
+              <button class="btn-secondary" onclick="rekapThisMonth()"><i class="fas fa-calendar-alt"></i> Bulan Ini</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="rekapStats" class="stats-grid" style="display:none;margin-bottom:24px"></div>
+        <div id="rekapTimeline" class="mt-20"></div>
+
+        <div id="rekapEmpty" class="empty-state hidden">
+          <i class="fas fa-calendar-times"></i>
+          <h3>Tidak ada jurnal</h3>
+          <p>Tidak ada jurnal pada periode yang dipilih</p>
+        </div>
+        <div id="rekapPlaceholder" class="empty-state">
+          <i class="fas fa-chart-bar"></i>
+          <h3>Pilih Periode Tanggal</h3>
+          <p>Pilih rentang tanggal di atas untuk melihat rekap jurnalmu</p>
         </div>
       </div>
 
@@ -246,84 +290,6 @@
       <!-- ===== JOURNALS PAGE (content merged into write page) ===== -->
       <div id="page-journals" class="page hidden"></div>
 
-      <!-- ===== SEARCH PAGE ===== -->
-      <div id="page-search" class="page hidden">
-        <div class="page-header">
-          <div>
-            <h2>Cari Jurnal</h2>
-            <p class="page-sub">Temukan jurnal berdasarkan kata kunci</p>
-          </div>
-        </div>
-        <div class="search-box-wrap">
-          <i class="fas fa-search search-icon"></i>
-          <input type="text" id="searchInput" class="search-box" placeholder="Cari judul, mata pelajaran, atau konten jurnal..." oninput="handleSearch()" />
-          <button class="search-clear" id="searchClear" onclick="clearSearch()"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="search-filters">
-          <button class="filter-chip active" onclick="setSearchFilter('all', this)">Semua</button>
-          <button class="filter-chip" onclick="setSearchFilter('title', this)">Judul</button>
-          <button class="filter-chip" onclick="setSearchFilter('subject', this)">Mapel</button>
-          <button class="filter-chip" onclick="setSearchFilter('content', this)">Konten</button>
-        </div>
-        <div id="searchResults" class="journals-grid mt-20"></div>
-        <div id="searchEmpty" class="empty-state hidden">
-          <i class="fas fa-search"></i>
-          <h3>Tidak ada hasil</h3>
-          <p>Coba kata kunci yang berbeda</p>
-        </div>
-        <div id="searchPlaceholder" class="empty-state">
-          <i class="fas fa-search"></i>
-          <h3>Cari Jurnalmu</h3>
-          <p>Ketikkan kata kunci di kolom pencarian di atas</p>
-        </div>
-      </div>
-
-      <!-- ===== REKAP PAGE ===== -->
-      <div id="page-rekap" class="page hidden">
-        <div class="page-header">
-          <div>
-            <h2>Rekap Jurnal</h2>
-            <p class="page-sub">Lihat rekap dan statistik jurnal berdasarkan periode tanggal</p>
-          </div>
-        </div>
-
-        <!-- Filter Tanggal -->
-        <div class="card rekap-filter">
-          <div class="rekap-filter-row">
-            <div class="form-group">
-              <label><i class="fas fa-calendar-day"></i> Dari Tanggal</label>
-              <input type="date" id="rekapStart" />
-            </div>
-            <div class="form-group">
-              <label><i class="fas fa-calendar-day"></i> Sampai Tanggal</label>
-              <input type="date" id="rekapEnd" />
-            </div>
-            <div class="rekap-filter-actions">
-              <button class="btn-primary" onclick="renderRekap()"><i class="fas fa-search"></i> Tampilkan</button>
-              <button class="btn-secondary" onclick="rekapToday()"><i class="fas fa-calendar-check"></i> Hari Ini</button>
-              <button class="btn-secondary" onclick="rekapThisWeek()"><i class="fas fa-calendar-week"></i> Minggu Ini</button>
-              <button class="btn-secondary" onclick="rekapThisMonth()"><i class="fas fa-calendar-alt"></i> Bulan Ini</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Rekap Stats -->
-        <div id="rekapStats" class="stats-grid" style="display:none;margin-bottom:24px"></div>
-
-        <!-- Rekap Timeline -->
-        <div id="rekapTimeline" class="mt-20"></div>
-
-        <div id="rekapEmpty" class="empty-state hidden">
-          <i class="fas fa-calendar-times"></i>
-          <h3>Tidak ada jurnal</h3>
-          <p>Tidak ada jurnal pada periode yang dipilih</p>
-        </div>
-        <div id="rekapPlaceholder" class="empty-state">
-          <i class="fas fa-chart-bar"></i>
-          <h3>Pilih Periode Tanggal</h3>
-          <p>Pilih rentang tanggal di atas untuk melihat rekap jurnalmu</p>
-        </div>
-      </div>
 
       <!-- ===== PROFILE PAGE ===== -->
       <div id="page-profile" class="page hidden">
@@ -421,17 +387,9 @@
       </div>
       <!-- === Beribadah Fields (shown only for Kebiasaan 2) === -->
       <div id="habitBeribadahSection" class="hidden" style="margin-top:22px">
-        <div class="form-group">
-          <label><i class="fas fa-place-of-worship"></i> Agama <span class="req">*</span></label>
-          <select id="habitAgama" onchange="onAgamaChange(this.value)">
-            <option value="">— Pilih Agama —</option>
-            <option value="Islam">Islam</option>
-            <option value="Kristen Protestan">Kristen Protestan</option>
-            <option value="Katolik">Katolik</option>
-            <option value="Hindu">Hindu</option>
-            <option value="Buddha">Buddha</option>
-            <option value="Konghucu">Konghucu</option>
-          </select>
+        <div class="form-group" id="habitReligionInfoGroup">
+          <label><i class="fas fa-place-of-worship"></i> Agama (dari akun)</label>
+          <input type="text" id="habitReligionInfo" readonly />
         </div>
         <div id="sholatSection" class="hidden">
           <div class="form-group">
@@ -471,31 +429,14 @@
           <textarea id="habitTopikBelajar" rows="2" placeholder="Tulis topik atau materi yang kamu pelajari hari ini..."></textarea>
         </div>
       </div>
-      <!-- Waktu Pelaksanaan (hidden for Beribadah-Islam) -->
+      <!-- Waktu Pelaksanaan -->
       <div id="habitWaktuGroup" class="form-group" style="margin-top:22px">
-        <label><i class="fas fa-clock"></i> Waktu Pelaksanaan <small style="font-weight:400;color:var(--text-muted)">(opsional)</small></label>
+        <label><i class="fas fa-clock"></i> Keterangan Waktu <small style="font-weight:400;color:var(--text-muted)">(opsional)</small></label>
         <input type="time" id="habitWaktu" />
       </div>
       <div class="form-group">
         <label><i class="fas fa-align-left"></i> Keterangan <span class="req" id="habitKetReq">*</span></label>
         <textarea id="habitKeterangan" placeholder="Ceritakan singkat bagaimana kamu melakukan kebiasaan ini hari ini..." rows="3"></textarea>
-      </div>
-      <div class="form-group">
-        <label><i class="fas fa-smile-beam"></i> Mood Saat Melakukan</label>
-        <div class="mood-selector habit-mood-selector">
-          <button type="button" class="habit-mood-btn" data-mood="😄" title="Sangat Baik">😄</button>
-          <button type="button" class="habit-mood-btn" data-mood="😊" title="Baik">😊</button>
-          <button type="button" class="habit-mood-btn" data-mood="😐" title="Biasa">😐</button>
-          <button type="button" class="habit-mood-btn" data-mood="😕" title="Kurang">😕</button>
-          <button type="button" class="habit-mood-btn" data-mood="😞" title="Buruk">😞</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label><i class="fas fa-star"></i> Penilaian Diri (1-10)</label>
-        <div class="rating-wrap">
-          <input type="range" id="habitRating" min="1" max="10" value="7" oninput="document.getElementById('habitRatingBadge').textContent=this.value" />
-          <span class="rating-badge" id="habitRatingBadge">7</span>
-        </div>
       </div>
       <div id="habitModalError" class="form-error hidden"></div>
       <div class="habit-modal-actions">
@@ -521,6 +462,6 @@
     </div>
   </div>
 
-  <script src="index.js?v=1.1"></script>
+  <script src="index.js?v=1.2"></script>
 </body>
 </html>

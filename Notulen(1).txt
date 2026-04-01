@@ -1,4 +1,4 @@
-- Dash Siswa
+- login Dash Siswa
 	- nama
 	- absen
 	- kelas
@@ -7,3 +7,7 @@
 - Tambahan
 	- custumizeable 
 	- notifikasi harian (1x hari)
+
+- REVISI (1):
+	- Navbar (untuk hp) pindah Bawah
+	- 

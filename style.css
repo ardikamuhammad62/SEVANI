@@ -445,7 +445,7 @@ body {
   .sidebar-nav {
     flex: 0 0 auto;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
     background: var(--card);
@@ -835,6 +835,7 @@ body {
 .stat-label { font-size: 12px; opacity: .85; margin-top: 4px; font-weight: 500; }
 
 .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.dashboard-grid > .card:only-child { grid-column: 1 / -1; }
 
 .mood-bars { display: flex; flex-direction: column; gap: 10px; }
 .mood-bar-row { display: flex; align-items: center; gap: 12px; }
