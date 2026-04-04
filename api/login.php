@@ -1,5 +1,6 @@
 <?php
 // api/login.php
+error_reporting(0);
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
 
@@ -53,15 +54,15 @@ if (!empty($data->username) && !empty($data->password)) {
                     "gender" => $gender,
                     "username" => $row['nip_nisn']
                 ]
-            ]);
+            ], JSON_UNESCAPED_UNICODE);
         } else {
-            echo json_encode(["status" => "error", "message" => "Password salah."]);
+            echo json_encode(["status" => "error", "message" => "Password salah."], JSON_UNESCAPED_UNICODE);
         }
     } else {
-        echo json_encode(["status" => "error", "message" => "Username tidak ditemukan."]);
+        echo json_encode(["status" => "error", "message" => "Username tidak ditemukan."], JSON_UNESCAPED_UNICODE);
     }
 } else {
-    echo json_encode(["status" => "error", "message" => "Username dan Password harus diisi."]);
+    echo json_encode(["status" => "error", "message" => "Username dan Password harus diisi."], JSON_UNESCAPED_UNICODE);
 }
 
 $conn->close();

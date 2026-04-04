@@ -1,5 +1,6 @@
 <?php
 // api/verify_session.php
+error_reporting(0);
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: GET");
 
@@ -23,12 +24,12 @@ if (!empty($username)) {
                 "agama" => $row['agama'],
                 "username" => $row['nip_nisn']
             ]
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
     } else {
-        echo json_encode(["status" => "error", "message" => "User tidak ditemukan."]);
+        echo json_encode(["status" => "error", "message" => "User tidak ditemukan."], JSON_UNESCAPED_UNICODE);
     }
 } else {
-    echo json_encode(["status" => "error", "message" => "Username diperlukan."]);
+    echo json_encode(["status" => "error", "message" => "Username diperlukan."], JSON_UNESCAPED_UNICODE);
 }
 
 $conn->close();

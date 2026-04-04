@@ -28,7 +28,7 @@ try {
     $gender_column = detectGenderColumn($conn);
 
     if ($nama === '' || ($gender !== 'laki-laki' && $gender !== 'perempuan')) {
-        echo json_encode(["status" => "error", "message" => "Data tidak lengkap."]);
+        echo json_encode(["status" => "error", "message" => "Data tidak lengkap."], JSON_UNESCAPED_UNICODE);
         exit();
     }
 
@@ -43,7 +43,7 @@ try {
     if ($role === 'guru') {
         $nip = isset($data->nip) ? preg_replace('/\D/', '', $data->nip) : '';
         if (!preg_match('/^\d{18}$/', $nip)) {
-            echo json_encode(["status" => "error", "message" => "NIP harus 18 digit angka."]);
+            echo json_encode(["status" => "error", "message" => "NIP harus 18 digit angka."], JSON_UNESCAPED_UNICODE);
             exit();
         }
 
@@ -60,15 +60,15 @@ try {
         $nisn = isset($data->nisn) ? preg_replace('/\D/', '', $data->nisn) : '';
 
         if ($kelas === '' || $no_absen === '' || $agama === '') {
-            echo json_encode(["status" => "error", "message" => "Data murid belum lengkap."]);
+            echo json_encode(["status" => "error", "message" => "Data murid belum lengkap."], JSON_UNESCAPED_UNICODE);
             exit();
         }
         if (!preg_match('/^\d+$/', $no_absen)) {
-            echo json_encode(["status" => "error", "message" => "Nomor absen harus berupa angka."]);
+            echo json_encode(["status" => "error", "message" => "Nomor absen harus berupa angka."], JSON_UNESCAPED_UNICODE);
             exit();
         }
         if (!preg_match('/^\d{10}$/', $nisn)) {
-            echo json_encode(["status" => "error", "message" => "NISN harus 10 digit angka."]);
+            echo json_encode(["status" => "error", "message" => "NISN harus 10 digit angka."], JSON_UNESCAPED_UNICODE);
             exit();
         }
 
@@ -82,7 +82,7 @@ try {
     $stmt_check->execute();
     $result_check = $stmt_check->get_result();
     if ($result_check->num_rows > 0) {
-        echo json_encode(["status" => "error", "message" => "Username sudah digunakan. Pilih yang lain."]);
+        echo json_encode(["status" => "error", "message" => "Username sudah digunakan. Pilih yang lain."], JSON_UNESCAPED_UNICODE);
         $stmt_check->close();
         exit();
     }
@@ -117,13 +117,13 @@ try {
                 "gender" => $gender,
                 "username" => $username
             ]
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
     } else {
-        echo json_encode(["status" => "error", "message" => "Gagal mendaftar."]);
+        echo json_encode(["status" => "error", "message" => "Gagal mendaftar."], JSON_UNESCAPED_UNICODE);
     }
     $stmt->close();
 } catch (Throwable $e) {
-    echo json_encode(["status" => "error", "message" => "Terjadi kesalahan server saat pendaftaran."]);
+    echo json_encode(["status" => "error", "message" => "Terjadi kesalahan server saat pendaftaran."], JSON_UNESCAPED_UNICODE);
 }
 
 $conn->close();

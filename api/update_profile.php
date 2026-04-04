@@ -1,5 +1,6 @@
 <?php
 // api/update_profile.php
+error_reporting(0);
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
 
@@ -16,7 +17,7 @@ if (!empty($data->id) && !empty($data->nama) && !empty($data->kelas) && !empty($
 
     $cek_username = $conn->query("SELECT id FROM users WHERE nip_nisn = '$username' AND id != '$id'");
     if ($cek_username->num_rows > 0) {
-        echo json_encode(["status" => "error", "message" => "Username sudah digunakan oleh orang lain!"]);
+        echo json_encode(["status" => "error", "message" => "Username sudah digunakan oleh orang lain!"], JSON_UNESCAPED_UNICODE);
         exit();
     }
 
@@ -43,12 +44,12 @@ if (!empty($data->id) && !empty($data->nama) && !empty($data->kelas) && !empty($
                 "agama" => $user_data['agama'],
                 "username" => $user_data['nip_nisn']
             ]
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
     } else {
-        echo json_encode(["status" => "error", "message" => "Gagal memperbarui profil: " . $conn->error]);
+        echo json_encode(["status" => "error", "message" => "Gagal memperbarui profil: " . $conn->error], JSON_UNESCAPED_UNICODE);
     }
 } else {
-    echo json_encode(["status" => "error", "message" => "Data tidak lengkap."]);
+    echo json_encode(["status" => "error", "message" => "Data tidak lengkap."], JSON_UNESCAPED_UNICODE);
 }
 
 $conn->close();
