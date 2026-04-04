@@ -36,8 +36,22 @@ let localJournals = [];
 let localHabits = {};
 
 // ===== STORAGE HELPERS =====
-const getSession  = () => localStorage.getItem(DB_SESSION);
-const setSession  = (u) => localStorage.setItem(DB_SESSION, u);
+const getSession  = () => {
+  const session = localStorage.getItem(DB_SESSION);
+  if (!session) return null;
+  try {
+    const parsed = JSON.parse(session);
+    if (typeof parsed === 'object' && parsed.username) return parsed;
+    // Jika bukan object valid, clear
+    clearSession();
+    return null;
+  } catch {
+    // Jika parse gagal (misal string lama), clear
+    clearSession();
+    return null;
+  }
+};
+const setSession  = (u) => localStorage.setItem(DB_SESSION, JSON.stringify(u));
 const clearSession= () => localStorage.removeItem(DB_SESSION);
 
 function getJournals() {
@@ -81,11 +95,24 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   const session = getSession();
   if (session) {
-    const users = getUsers();
-    const user = users.find(u => u.username === session);
-    if (user) { currentUser = user; launchApp(); return; }
+    fetch('api/verify_session.php?username=' + encodeURIComponent(session.username))
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'success') {
+          currentUser = data.user;
+          launchApp();
+        } else {
+          clearSession();
+          document.getElementById('authScreen').classList.remove('hidden');
+        }
+      })
+      .catch(() => {
+        clearSession();
+        document.getElementById('authScreen').classList.remove('hidden');
+      });
+  } else {
+    document.getElementById('authScreen').classList.remove('hidden');
   }
-  document.getElementById('authScreen').classList.remove('hidden');
   // set today's date
   document.getElementById('jDate').value = todayStr();
 });
@@ -122,7 +149,7 @@ async function handleLogin(e) {
 
     if (result.status === 'success') {
       currentUser = result.user;
-      setSession(result.user.username); // Tetap simpan sesi lokal untuk menandai user sedang login
+      setSession(result.user); // Simpan data user lengkap
       launchApp();
     } else {
       showError('loginError', result.message);
@@ -158,7 +185,7 @@ async function handleRegister(e) {
 
     if (result.status === 'success') {
       currentUser = result.user;
-      setSession(result.user.username);
+      setSession(result.user);
       launchApp();
     } else {
       showError('registerError', result.message);
@@ -1054,9 +1081,7 @@ async function saveProfile(e) {
 
     if (result.status === 'success') {
       // Jika username berubah, perbarui session lokal
-      if (username !== currentUser.username) {
-        setSession(username);
-      }
+      setSession(result.user);
 
       // Perbarui state currentUser dengan data terbaru dari server
       currentUser = result.user;

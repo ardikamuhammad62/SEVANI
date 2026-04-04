@@ -37,7 +37,7 @@ if (!empty($data->id) && !empty($data->nama) && !empty($data->kelas) && !empty($
             "message" => "Profil berhasil diperbarui!",
             "user" => [
                 "id" => $user_data['id'],
-                "nama" => $user_data['nama'],
+                "name" => $user_data['nama'],
                 "kelas" => $user_data['kelas'],
                 "noAbsen" => $user_data['no_absen'],
                 "agama" => $user_data['agama'],

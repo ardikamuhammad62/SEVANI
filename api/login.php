@@ -22,14 +22,14 @@ if (!empty($data->username) && !empty($data->password)) {
             echo json_encode([
                 "status" => "success",
                 "message" => "Login berhasil!",
-                "user" => [
-                    "id" => $row['id'],
-                    "nama" => $row['nama'],
-                    "kelas" => $row['kelas'],
-                    "noAbsen" => $row['no_absen'],
-                    "agama" => $row['agama'],
-                    "username" => $row['username']
-                ]
+            "user" => [
+                "id" => $row['id'],
+                "name" => $row['nama'],
+                "kelas" => $row['kelas'],
+                "noAbsen" => $row['no_absen'],
+                "agama" => $row['agama'],
+                "username" => $row['username']
+            ]
             ]);
         } else {
             echo json_encode(["status" => "error", "message" => "Password salah."]);

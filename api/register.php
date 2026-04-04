@@ -38,7 +38,7 @@ if (!empty($data->nama) && !empty($data->kelas) && !empty($data->username) && !e
             "message" => "Pendaftaran berhasil!",
             "user" => [
                 "id" => $new_id,
-                "nama" => $nama,
+                "name" => $nama,
                 "kelas" => $kelas,
                 "noAbsen" => $no_absen,
                 "agama" => $agama,
