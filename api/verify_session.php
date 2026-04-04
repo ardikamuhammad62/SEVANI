@@ -8,7 +8,7 @@ require 'koneksi.php';
 $username = isset($_GET['username']) ? $conn->real_escape_string($_GET['username']) : '';
 
 if (!empty($username)) {
-    $query = "SELECT id, nama, kelas, no_absen, agama, username FROM users WHERE username = '$username'";
+    $query = "SELECT id, nama, kelas, no_absen, agama, nip_nisn FROM users WHERE nip_nisn = '$username'";
     $result = $conn->query($query);
 
     if ($result->num_rows > 0) {
@@ -21,7 +21,7 @@ if (!empty($username)) {
                 "kelas" => $row['kelas'],
                 "noAbsen" => $row['no_absen'],
                 "agama" => $row['agama'],
-                "username" => $row['username']
+                "username" => $row['nip_nisn']
             ]
         ]);
     } else {

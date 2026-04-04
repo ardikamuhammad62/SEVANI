@@ -14,7 +14,7 @@ if (!empty($data->id) && !empty($data->nama) && !empty($data->kelas) && !empty($
     $kelas = $conn->real_escape_string($data->kelas);
     $username = $conn->real_escape_string($data->username);
 
-    $cek_username = $conn->query("SELECT id FROM users WHERE username = '$username' AND id != '$id'");
+    $cek_username = $conn->query("SELECT id FROM users WHERE nip_nisn = '$username' AND id != '$id'");
     if ($cek_username->num_rows > 0) {
         echo json_encode(["status" => "error", "message" => "Username sudah digunakan oleh orang lain!"]);
         exit();
@@ -22,14 +22,14 @@ if (!empty($data->id) && !empty($data->nama) && !empty($data->kelas) && !empty($
 
     if (!empty($data->password)) {
         $hashed_password = password_hash($data->password, PASSWORD_DEFAULT);
-        $query = "UPDATE users SET nama='$nama', kelas='$kelas', username='$username', password='$hashed_password' WHERE id='$id'";
+        $query = "UPDATE users SET nama='$nama', kelas='$kelas', nip_nisn='$username', password='$hashed_password' WHERE id='$id'";
     } else {
-        $query = "UPDATE users SET nama='$nama', kelas='$kelas', username='$username' WHERE id='$id'";
+        $query = "UPDATE users SET nama='$nama', kelas='$kelas', nip_nisn='$username' WHERE id='$id'";
     }
 
     if ($conn->query($query) === TRUE) {
         // PERBAIKAN: Ambil data user LENGKAP setelah di-update agar sesi di JS tidak hilang
-        $result = $conn->query("SELECT id, nama, kelas, no_absen, agama, username FROM users WHERE id='$id'");
+        $result = $conn->query("SELECT id, nama, kelas, no_absen, agama, nip_nisn FROM users WHERE id='$id'");
         $user_data = $result->fetch_assoc();
 
         echo json_encode([
@@ -41,7 +41,7 @@ if (!empty($data->id) && !empty($data->nama) && !empty($data->kelas) && !empty($
                 "kelas" => $user_data['kelas'],
                 "noAbsen" => $user_data['no_absen'],
                 "agama" => $user_data['agama'],
-                "username" => $user_data['username']
+                "username" => $user_data['nip_nisn']
             ]
         ]);
     } else {

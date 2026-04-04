@@ -25,8 +25,8 @@ if (!empty($data->username) && !empty($data->password)) {
     $gender_column = detectGenderColumn($conn);
     $gender_select = $gender_column !== '' ? ", $gender_column AS gender" : '';
 
-    // Cari user berdasarkan username
-    $query = "SELECT id, nama, kelas, no_absen, agama, username, password$gender_select FROM users WHERE username = '$username'";
+    // Cari user berdasarkan nip_nisn
+    $query = "SELECT id, nama, kelas, no_absen, agama, nip_nisn, password$gender_select FROM users WHERE nip_nisn = '$username'";
     $result = $conn->query($query);
 
     if ($result->num_rows > 0) {
@@ -51,7 +51,7 @@ if (!empty($data->username) && !empty($data->password)) {
                     "nisn" => $role === 'murid' ? $row['username'] : '',
                     "nip" => $role === 'guru' ? $row['username'] : '',
                     "gender" => $gender,
-                    "username" => $row['username']
+                    "username" => $row['nip_nisn']
                 ]
             ]);
         } else {

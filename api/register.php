@@ -76,8 +76,8 @@ try {
         $password_plain = $nisn;
     }
 
-    // Cek apakah username sudah ada
-    $stmt_check = $conn->prepare("SELECT id FROM users WHERE username = ?");
+    // Cek apakah nip_nisn sudah ada
+    $stmt_check = $conn->prepare("SELECT id FROM users WHERE nip_nisn = ?");
     $stmt_check->bind_param("s", $username);
     $stmt_check->execute();
     $result_check = $stmt_check->get_result();
@@ -93,10 +93,10 @@ try {
 
     // Insert ke database
     if ($gender_column !== '') {
-        $stmt = $conn->prepare("INSERT INTO users (nama, kelas, no_absen, agama, username, password, $gender_column) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO users (nama, kelas, no_absen, agama, nip_nisn, password, $gender_column) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("sssssss", $nama, $kelas, $no_absen, $agama, $username, $hashed_password, $gender);
     } else {
-        $stmt = $conn->prepare("INSERT INTO users (nama, kelas, no_absen, agama, username, password) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO users (nama, kelas, no_absen, agama, nip_nisn, password) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssss", $nama, $kelas, $no_absen, $agama, $username, $hashed_password);
     }
 
