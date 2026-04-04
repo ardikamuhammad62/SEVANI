@@ -26,6 +26,29 @@ if (strtolower((string)$role_row['kelas']) !== 'guru') {
     exit();
 }
 
+$students = [];
+$students_query = "
+    SELECT
+        u.id AS student_id,
+        u.nama AS student_name,
+        u.kelas AS student_class,
+        u.no_absen AS student_no_absen
+    FROM users u
+    WHERE LOWER(u.kelas) <> 'guru'
+    ORDER BY u.kelas ASC, CAST(u.no_absen AS UNSIGNED) ASC, u.nama ASC
+";
+
+$students_result = $conn->query($students_query);
+if (!$students_result) {
+    http_response_code(500);
+    echo json_encode(["status" => "error", "message" => "Gagal mengambil daftar murid."], JSON_UNESCAPED_UNICODE);
+    exit();
+}
+
+while ($row = $students_result->fetch_assoc()) {
+    $students[] = $row;
+}
+
 $journals = [];
 $query = "
     SELECT
@@ -65,6 +88,7 @@ while ($row = $result->fetch_assoc()) {
 
 echo json_encode([
     "status" => "success",
+    "students" => $students,
     "journals" => $journals
 ], JSON_UNESCAPED_UNICODE);
 

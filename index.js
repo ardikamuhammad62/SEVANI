@@ -43,6 +43,8 @@ let currentModalId   = null;
 let pendingDeleteId  = null;
 let currentHabitIndex = null;
 let teacherJournals  = [];
+let teacherStudents  = [];
+let selectedTeacherStudentKey = '';
 
 // State Lokal pengganti localStorage
 let localJournals = []; 
@@ -599,21 +601,58 @@ function normalizeTeacherJournal(row) {
   };
 }
 
+function normalizeTeacherStudent(row) {
+  return {
+    ...row,
+    student_id: row.student_id || row.id || '',
+    student_name: row.student_name || row.nama || '-',
+    student_class: normalizeClassName(row.student_class || row.kelas || ''),
+    student_no_absen: row.student_no_absen || row.no_absen || ''
+  };
+}
+
+function getTeacherStudentKey(student) {
+  return `${normalizeClassName(student.student_class)}::${String(student.student_id || student.user_id || student.student_name || '')}`;
+}
+
+function getTeacherStudentKeyFromJournal(journal) {
+  return getTeacherStudentKey(journal);
+}
+
+function decodeTeacherStudentKey(encoded) {
+  try {
+    return decodeURIComponent(encoded || '');
+  } catch (_e) {
+    return '';
+  }
+}
+
+function toggleTeacherStudent(encodedKey) {
+  const key = decodeTeacherStudentKey(encodedKey);
+  if (!key) return;
+  selectedTeacherStudentKey = selectedTeacherStudentKey === key ? '' : key;
+  renderTeacherJournals();
+}
+
 async function loadTeacherJournals() {
   if (!currentUser?.id) return;
 
   try {
     const data = await requestJson('api/get_teacher_journals.php?user_id=' + currentUser.id);
     if (data.status === 'success') {
+      teacherStudents = (data.students || []).map(normalizeTeacherStudent);
       teacherJournals = (data.journals || []).map(normalizeTeacherJournal);
       localJournals = teacherJournals;
       localHabits = {};
+      selectedTeacherStudentKey = '';
     } else {
+      teacherStudents = [];
       teacherJournals = [];
       localJournals = [];
       showToast(data.message || 'Gagal memuat jurnal murid.', 'error');
     }
   } catch (error) {
+    teacherStudents = [];
     teacherJournals = [];
     localJournals = [];
     showToast('Gagal memuat jurnal murid dari server.', 'error');
@@ -629,18 +668,26 @@ function renderTeacherJournals() {
   const start = document.getElementById('teacherStart')?.value || '';
   const end = document.getElementById('teacherEnd')?.value || '';
 
+  let students = teacherStudents.slice();
   let journals = teacherJournals.slice();
 
   if (grade !== 'all') {
+    students = students.filter(s => normalizeClassName(s.student_class).startsWith(grade));
     journals = journals.filter(j => normalizeClassName(j.student_class).startsWith(grade));
   }
 
   if (classLetter !== 'all') {
+    students = students.filter(s => normalizeClassName(s.student_class).endsWith(classLetter));
     journals = journals.filter(j => normalizeClassName(j.student_class).endsWith(classLetter));
   }
 
   if (start) journals = journals.filter(j => j.date >= start);
   if (end) journals = journals.filter(j => j.date <= end);
+
+  const visibleStudentKeys = new Set(students.map(getTeacherStudentKey));
+  if (selectedTeacherStudentKey && !visibleStudentKeys.has(selectedTeacherStudentKey)) {
+    selectedTeacherStudentKey = '';
+  }
 
   localJournals = journals;
 
@@ -649,8 +696,8 @@ function renderTeacherJournals() {
   const empty = document.getElementById('teacherEmpty');
   if (!summary || !groups || !empty) return;
 
-  const uniqueStudents = new Set(journals.map(j => String(j.student_id || j.user_id || ''))).size;
-  const uniqueClasses = new Set(journals.map(j => normalizeClassName(j.student_class))).size;
+  const uniqueStudents = students.length;
+  const uniqueClasses = new Set(students.map(s => normalizeClassName(s.student_class))).size;
 
   summary.innerHTML = `
     <div class="stat-card purple">
@@ -676,7 +723,7 @@ function renderTeacherJournals() {
     </div>
   `;
 
-  if (!journals.length) {
+  if (!students.length) {
     groups.innerHTML = '';
     empty.classList.remove('hidden');
     return;
@@ -684,25 +731,67 @@ function renderTeacherJournals() {
 
   empty.classList.add('hidden');
 
-  const grouped = {};
-  journals.forEach(j => {
-    const key = normalizeClassName(j.student_class) || '-';
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(j);
+  const groupedStudents = {};
+  students.forEach(s => {
+    const key = normalizeClassName(s.student_class) || '-';
+    if (!groupedStudents[key]) groupedStudents[key] = [];
+    groupedStudents[key].push(s);
   });
 
-  const orderedClasses = Object.keys(grouped).sort((a, b) => getClassSortKey(a) - getClassSortKey(b));
+  const journalsByStudent = {};
+  journals.forEach(j => {
+    const key = getTeacherStudentKeyFromJournal(j);
+    if (!journalsByStudent[key]) journalsByStudent[key] = [];
+    journalsByStudent[key].push(j);
+  });
+
+  const orderedClasses = Object.keys(groupedStudents).sort((a, b) => getClassSortKey(a) - getClassSortKey(b));
   groups.innerHTML = orderedClasses.map(className => {
-    const classJournals = grouped[className];
+    const classStudents = groupedStudents[className].slice().sort((a, b) => {
+      const aNo = Number(a.student_no_absen || 9999);
+      const bNo = Number(b.student_no_absen || 9999);
+      if (aNo !== bNo) return aNo - bNo;
+      return String(a.student_name).localeCompare(String(b.student_name), 'id');
+    });
+
+    const selectedStudent = classStudents.find(s => getTeacherStudentKey(s) === selectedTeacherStudentKey) || null;
+    const selectedJournals = selectedStudent ? (journalsByStudent[getTeacherStudentKey(selectedStudent)] || []) : [];
+
     return `
       <div class="card teacher-class-card mt-20">
         <div class="card-header">
           <h3><i class="fas fa-school"></i> Kelas ${className}</h3>
-          <span class="badge badge-subject"><i class="fas fa-book-open"></i> ${classJournals.length} jurnal</span>
+          <span class="badge badge-subject"><i class="fas fa-users"></i> ${classStudents.length} murid</span>
         </div>
-        <div class="journals-grid">
-          ${classJournals.map(j => buildJournalCard(j)).join('')}
+        <div class="teacher-student-grid">
+          ${classStudents.map(s => {
+            const key = getTeacherStudentKey(s);
+            const studentJournals = journalsByStudent[key] || [];
+            const lastDate = studentJournals.length ? studentJournals[0].date : '';
+            const isActive = key === selectedTeacherStudentKey;
+            return `
+              <button class="teacher-student-card${isActive ? ' active' : ''}" onclick="toggleTeacherStudent('${encodeURIComponent(key)}')">
+                <div class="teacher-student-name">${escHtml(s.student_name || '-')}</div>
+                <div class="teacher-student-meta">${escHtml(className)}${s.student_no_absen ? ` | Absen ${escHtml(String(s.student_no_absen))}` : ''}</div>
+                <div class="teacher-student-badges">
+                  <span class="badge badge-subject"><i class="fas fa-book-open"></i> ${studentJournals.length} jurnal</span>
+                  ${lastDate ? `<span class="badge badge-category"><i class="fas fa-calendar-day"></i> ${formatDateShort(lastDate)}</span>` : '<span class="badge badge-category"><i class="fas fa-clock"></i> Belum ada aktivitas</span>'}
+                </div>
+              </button>
+            `;
+          }).join('')}
         </div>
+        ${selectedStudent ? `
+          <div class="teacher-student-detail mt-20">
+            <div class="card-header" style="margin-bottom:14px">
+              <h3><i class="fas fa-user-graduate"></i> Aktivitas Jurnal ${escHtml(selectedStudent.student_name || '-')}</h3>
+              <span class="badge badge-subject"><i class="fas fa-book-open"></i> ${selectedJournals.length} jurnal</span>
+            </div>
+            ${selectedJournals.length
+              ? `<div class="journals-grid">${selectedJournals.map(j => buildJournalCard(j, { showStudentMeta: false })).join('')}</div>`
+              : `<div class="empty-state" style="padding:24px 12px"><i class="fas fa-folder-open"></i><h3>Belum ada jurnal</h3><p>Murid ini belum memiliki aktivitas pada rentang tanggal yang dipilih.</p></div>`}
+          </div>
+        ` : ''}
       </div>
     `;
   }).join('');
@@ -1190,9 +1279,10 @@ function renderJournals() {
   container.innerHTML = journals.map(j => buildJournalCard(j)).join('');
 }
 
-function buildJournalCard(j) {
+function buildJournalCard(j, options = {}) {
+  const { showStudentMeta = true } = options;
   const preview = j.content.replace(/<[^>]*>/g, '').slice(0, 120) + (j.content.length > 120 ? '...' : '');
-  const teacherMeta = isTeacher()
+  const teacherMeta = (isTeacher() && showStudentMeta)
     ? `<div class="jcard-student-meta"><i class="fas fa-user-graduate"></i> ${escHtml(j.student_name || '-')} (${escHtml(j.student_class || '-')}${j.student_no_absen ? ` | Absen ${escHtml(String(j.student_no_absen))}` : ''})</div>`
     : '';
   const actionButtons = isTeacher()
