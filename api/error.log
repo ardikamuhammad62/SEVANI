@@ -1,0 +1,18 @@
+[04-Apr-2026 11:22:00 UTC] save_journal.php - Raw input: {"user_id":"1","id":"mnk8t2i2mdoxq","title":"🌅 Bangun Pagi","date":"2026-04-04","subject":"Bangun Pagi","category":"Bangun Pagi","mood":"😊","rating":7,"content":"<b>Waktu:</b> 05:00<br><b>Keterangan:</b> bangun","keypoints":"","questions":""}
+[04-Apr-2026 11:22:00 UTC] save_journal.php - Decoded data: {"user_id":"1","id":"mnk8t2i2mdoxq","title":"\ud83c\udf05 Bangun Pagi","date":"2026-04-04","subject":"Bangun Pagi","category":"Bangun Pagi","mood":"\ud83d\ude0a","rating":7,"content":"<b>Waktu:<\/b> 05:00<br><b>Keterangan:<\/b> bangun","keypoints":"","questions":""}
+[04-Apr-2026 11:22:00 UTC] save_journal.php - Valid data received: user_id=1, id=mnk8t2i2mdoxq
+[04-Apr-2026 11:22:00 UTC] save_journal.php - Fields: id=mnk8t2i2mdoxq, user_id=1, tanggal=2026-04-04, title=🌅 Bangun Pagi
+[04-Apr-2026 11:22:00 UTC] save_journal.php - Query: INSERT INTO journals (id, user_id, title, tanggal, subject, category, mood, rating, content, keypoints, questions) 
+              VALUES ('mnk8t2i2mdoxq', '1', '🌅 Bangun Pagi', '2026-04-04', 'Bangun Pagi', 'Bangun Pagi', '😊', 7, '<b>Waktu:</b> 05:00<br><b>Keterangan:</b> bangun', '', '')
+[04-Apr-2026 11:22:00 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Incorrect integer value: 'mnk8t2i2mdoxq' for column 'id' at row 1 in C:\laragon\www\sevani\api\save_journal.php:53
+Stack trace:
+#0 C:\laragon\www\sevani\api\save_journal.php(53): mysqli->query('INSERT INTO jou...')
+#1 {main}
+  thrown in C:\laragon\www\sevani\api\save_journal.php on line 53
+[04-Apr-2026 11:24:49 UTC] save_journal.php - Raw input: {"user_id":1,"id":"mnk8wp5anop5m","title":"🌅 Bangun Pagi","date":"2026-04-04","subject":"Bangun Pagi","category":"Bangun Pagi","mood":"😊","rating":7,"content":"<b>Waktu:</b> 06:00<br><b>Keterangan:</b> bangun","keypoints":"","questions":""}
+[04-Apr-2026 11:24:49 UTC] save_journal.php - Decoded data: {"user_id":1,"id":"mnk8wp5anop5m","title":"\ud83c\udf05 Bangun Pagi","date":"2026-04-04","subject":"Bangun Pagi","category":"Bangun Pagi","mood":"\ud83d\ude0a","rating":7,"content":"<b>Waktu:<\/b> 06:00<br><b>Keterangan:<\/b> bangun","keypoints":"","questions":""}
+[04-Apr-2026 11:24:49 UTC] save_journal.php - Valid data received: user_id=1, id=mnk8wp5anop5m
+[04-Apr-2026 11:24:49 UTC] save_journal.php - Fields: id=mnk8wp5anop5m, user_id=1, tanggal=2026-04-04, title=🌅 Bangun Pagi
+[04-Apr-2026 11:24:49 UTC] save_journal.php - Query: INSERT INTO journals (id, user_id, title, tanggal, subject, category, mood, rating, content, keypoints, questions) 
+              VALUES ('mnk8wp5anop5m', '1', '🌅 Bangun Pagi', '2026-04-04', 'Bangun Pagi', 'Bangun Pagi', '😊', 7, '<b>Waktu:</b> 06:00<br><b>Keterangan:</b> bangun', '', '')
+[04-Apr-2026 11:24:49 UTC] save_journal.php - SUCCESS: Journal saved with id=mnk8wp5anop5m

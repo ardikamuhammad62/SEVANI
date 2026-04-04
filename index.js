@@ -235,17 +235,27 @@ function getHabitState(date) {
 // Menyimpan state kebiasaan ke Database
 async function setHabitState(date, state) {
   localHabits[date] = state; // Update UI langsung
+  console.log('setHabitState called with date:', date, 'state:', state, 'currentUser:', currentUser);
   try {
-    await fetch('api/save_habit.php', {
+    const payload = {
+      user_id: currentUser.id,
+      tanggal: date,
+      habit_data: state
+    };
+    console.log('Sending to save_habit.php:', JSON.stringify(payload));
+    
+    const response = await fetch('api/save_habit.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: currentUser.id,
-        tanggal: date,
-        habit_data: state
-      })
+      body: JSON.stringify(payload)
     });
-  } catch(e) { console.error('Gagal menyimpan habit:', e); }
+    
+    console.log('save_habit.php response status:', response.status);
+    const result = await response.json();
+    console.log('save_habit.php response:', result);
+  } catch(e) { 
+    console.error('Gagal menyimpan habit:', e); 
+  }
 }
 
 // ===== INIT =====

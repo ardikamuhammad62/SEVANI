@@ -4,6 +4,8 @@ error_reporting(0);
 ini_set('log_errors', '1');
 ini_set('error_log', __DIR__ . '/error.log');
 
+error_log('====== save_habit.php called at ' . date('Y-m-d H:i:s') . ' ======');
+
 header("Content-Type: application/json; charset=UTF-8");
 require 'koneksi.php';
 
@@ -55,5 +57,6 @@ if (!empty($data->user_id) && !empty($data->tanggal) && isset($data->habit_data)
 } else {
     http_response_code(400);
     echo json_encode(["status" => "error", "message" => "user_id, tanggal, dan habit_data diperlukan"], JSON_UNESCAPED_UNICODE);
+}
 $conn->close();
 ?>
