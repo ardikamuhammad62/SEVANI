@@ -482,25 +482,35 @@ function clearError(id) {
 
 // ===== LAUNCH APP =====
 async function launchApp() {
+  console.log('launchApp() called, currentUser:', currentUser);
   document.getElementById('authScreen').classList.add('hidden');
   document.getElementById('appScreen').classList.remove('hidden');
   updateUserUI();
   configureRoleUI();
   
   if (isTeacher()) {
+    console.log('Loading teacher journals...');
     await loadTeacherJournals();
   } else {
     // Mengambil data dari MySQL saat aplikasi berjalan
     if (currentUser?.id) {
       try {
-        const data = await requestJson('api/get_data.php?user_id=' + currentUser.id);
+        const url = 'api/get_data.php?user_id=' + currentUser.id;
+        console.log('Fetching student data from:', url);
+        const data = await requestJson(url);
+        console.log('Data fetched:', data);
         if (data.status === 'success') {
           localHabits = data.habits || {};
           localJournals = data.journals || [];
+          console.log('Data loaded - habits count:', Object.keys(localHabits).length, 'journals count:', localJournals.length);
+        } else {
+          console.error('API returned error:', data.message);
         }
       } catch (error) {
         console.error('Gagal memuat data dari server:', error);
       }
+    } else {
+      console.error('currentUser.id tidak tersedia:', currentUser);
     }
   }
 
