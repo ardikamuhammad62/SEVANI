@@ -364,6 +364,14 @@ body {
 }
 .avatar.lg { width: 80px; height: 80px; font-size: 32px; }
 
+.avatar.gender-avatar,
+.topbar-avatar.gender-avatar,
+.profile-avatar.gender-avatar {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 /* ===== TOPBAR ===== */
 .topbar {
   position: fixed; top: 0; left: var(--sidebar-w); right: 0; height: var(--topbar-h);
@@ -449,6 +457,17 @@ body {
     gap: 6px;
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
     background: var(--card);
+  }
+
+  body.role-teacher .sidebar-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  body.role-teacher .sidebar-nav .nav-item {
+    width: auto;
+    max-width: none;
   }
 
   .nav-item {
@@ -927,6 +946,31 @@ body {
 }
 .filter-chip.active { border-color: var(--primary); color: var(--primary); background: rgba(56,189,248,.08); }
 
+/* ===== TEACHER HISTORY ===== */
+.teacher-filter-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+.teacher-filter-card .form-group { margin-bottom: 0; }
+.teacher-class-card .card-header { margin-bottom: 14px; }
+.teacher-profile-card-actions { margin-top: 12px; }
+
+.jcard-student-meta {
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+[data-theme="dark"] .jcard-student-meta {
+  color: var(--text-light);
+}
+
 /* ===== PROFILE PAGE ===== */
 .profile-layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start; }
 .profile-card { text-align: center; }
@@ -983,6 +1027,8 @@ body {
   .dashboard-grid { grid-template-columns: 1fr; }
   .journals-grid { grid-template-columns: 1fr; }
   .profile-layout { grid-template-columns: 1fr; }
+  .teacher-filter-row { grid-template-columns: 1fr; }
+  body.role-teacher .sidebar-nav .nav-item { width: auto; }
 }
 @media (max-width: 420px) {
   .stats-grid { grid-template-columns: 1fr; }

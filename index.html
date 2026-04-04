@@ -36,8 +36,8 @@
       <!-- Login Form -->
       <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
         <div class="form-group">
-          <label><i class="fas fa-user"></i> Username</label>
-          <input type="text" id="loginUsername" placeholder="Masukkan username" required />
+          <label><i class="fas fa-user"></i> NISN / NIP</label>
+          <input type="text" id="loginUsername" placeholder="Masukkan NISN atau NIP" required />
         </div>
         <div class="form-group">
           <label><i class="fas fa-lock"></i> Password</label>
@@ -56,44 +56,66 @@
       <!-- Register Form -->
       <form id="registerForm" class="auth-form hidden" onsubmit="handleRegister(event)">
         <div class="form-group">
+          <label><i class="fas fa-user-shield"></i> Role</label>
+          <select id="regRole" onchange="onRegisterRoleChange()" required>
+            <option value="murid" selected>Murid</option>
+            <option value="guru">Guru</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label><i class="fas fa-id-card"></i> Nama Lengkap</label>
           <input type="text" id="regName" placeholder="Nama lengkap kamu" required />
         </div>
         <div class="form-group">
-          <label><i class="fas fa-graduation-cap"></i> Kelas</label>
-                <input type="text" id="regClass" placeholder="Contoh: 7A, 8B, 9C" required />
-        </div>
-        <div class="form-group">
-          <label><i class="fas fa-list-ol"></i> Nomer Absen</label>
-          <input type="number" id="regNumber" min="1" placeholder="Contoh: 12" required />
-        </div>
-        <div class="form-group">
-          <label><i class="fas fa-user"></i> Username</label>
-          <input type="text" id="regUsername" placeholder="Buat username unik" required />
-        </div>
-        <div class="form-group">
-          <label><i class="fas fa-place-of-worship"></i> Agama</label>
-          <select id="regReligion" required>
-            <option value="">-- Pilih Agama --</option>
-            <option value="Islam">Islam</option>
-            <option value="Kristen Protestan">Kristen Protestan</option>
-            <option value="Katolik">Katolik</option>
-            <option value="Hindu">Hindu</option>
-            <option value="Buddha">Buddha</option>
-            <option value="Konghucu">Konghucu</option>
+          <label><i class="fas fa-venus-mars"></i> Jenis Kelamin</label>
+          <select id="regGender" required>
+            <option value="">-- Pilih Jenis Kelamin --</option>
+            <option value="laki-laki">Laki-laki</option>
+            <option value="perempuan">Perempuan</option>
           </select>
         </div>
-        <div class="form-group">
-          <label><i class="fas fa-lock"></i> Password</label>
-          <div class="input-pass">
-            <input type="password" id="regPassword" placeholder="Minimal 6 karakter" required />
-            <button type="button" class="toggle-pass" onclick="togglePass('regPassword',this)"><i class="fas fa-eye"></i></button>
+        <div id="studentRegisterFields">
+          <div class="form-group">
+            <label><i class="fas fa-graduation-cap"></i> Kelas</label>
+            <select id="regClass" required>
+              <option value="">-- Pilih Kelas --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-list-ol"></i> Nomor Absen</label>
+            <select id="regNumber" required>
+              <option value="">-- Pilih Nomor Absen --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-id-badge"></i> NISN (10 digit)</label>
+            <input type="text" id="regNisn" inputmode="numeric" maxlength="10" pattern="\d{10}" placeholder="Masukkan NISN 10 digit" required />
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-place-of-worship"></i> Agama</label>
+            <select id="regReligion" required>
+              <option value="">-- Pilih Agama --</option>
+              <option value="Islam">Islam</option>
+              <option value="Kristen Protestan">Kristen Protestan</option>
+              <option value="Katolik">Katolik</option>
+              <option value="Hindu">Hindu</option>
+              <option value="Buddha">Buddha</option>
+              <option value="Konghucu">Konghucu</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="teacherRegisterFields" class="hidden">
+          <div class="form-group">
+            <label><i class="fas fa-id-badge"></i> NIP (18 digit)</label>
+            <input type="text" id="regNip" inputmode="numeric" maxlength="18" pattern="\d{18}" placeholder="Masukkan NIP 18 digit" />
           </div>
         </div>
         <div id="registerError" class="form-error hidden"></div>
         <button type="submit" class="btn-primary btn-full">
           <i class="fas fa-user-plus"></i> Daftar
         </button>
+        <p class="auth-hint" style="margin-top:10px">Password awal otomatis sama dengan NISN/NIP.</p>
         <p class="auth-hint">Sudah punya akun? <a onclick="switchTab('login')">Masuk</a></p>
       </form>
 
@@ -126,9 +148,9 @@
         </div>
       </div>
       <nav class="sidebar-nav">
-        <a class="nav-item active" onclick="showPage('write')"><i class="fas fa-pen-nib"></i><span>Tulis Jurnal</span></a>
-        <a class="nav-item" onclick="showPage('history')"><i class="fas fa-clock-rotate-left"></i><span>History</span></a>
-        <a class="nav-item" onclick="showPage('profile')"><i class="fas fa-user-circle"></i><span>Profil</span></a>
+        <a id="navWrite" class="nav-item active" data-page="write" onclick="showPage('write')"><i class="fas fa-pen-nib"></i><span>Tulis Jurnal</span></a>
+        <a id="navHistory" class="nav-item" data-page="history" onclick="showPage('history')"><i class="fas fa-clock-rotate-left"></i><span>History</span></a>
+        <a id="navProfile" class="nav-item" data-page="profile" onclick="showPage('profile')"><i class="fas fa-user-circle"></i><span>Profil</span></a>
       </nav>
       <button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i><span>Keluar</span></button>
     </aside>
@@ -151,11 +173,58 @@
             <h2 id="greetingText">Selamat Pagi!</h2>
             <p class="page-sub" id="greetingDate"></p>
           </div>
-          <button class="btn-primary" onclick="showPage('write')"><i class="fas fa-plus"></i> Tulis Jurnal</button>
+          <button id="historyWriteBtn" class="btn-primary" onclick="showPage('write')"><i class="fas fa-plus"></i> Tulis Jurnal</button>
+        </div>
+
+        <div id="teacherHistorySection" class="hidden">
+          <div class="card teacher-filter-card">
+            <div class="teacher-filter-row">
+              <div class="form-group">
+                <label><i class="fas fa-layer-group"></i> Angkatan</label>
+                <select id="teacherGradeFilter" onchange="renderTeacherJournals()">
+                  <option value="all">Semua Angkatan</option>
+                  <option value="7" selected>Kelas 7</option>
+                  <option value="8">Kelas 8</option>
+                  <option value="9">Kelas 9</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-school"></i> Rombel</label>
+                <select id="teacherClassFilter" onchange="renderTeacherJournals()">
+                  <option value="all">Semua Kelas</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                  <option value="D">D</option>
+                  <option value="E">E</option>
+                  <option value="F">F</option>
+                  <option value="G">G</option>
+                  <option value="H">H</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-calendar-day"></i> Dari Tanggal</label>
+                <input type="date" id="teacherStart" onchange="renderTeacherJournals()" />
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-calendar-day"></i> Sampai Tanggal</label>
+                <input type="date" id="teacherEnd" onchange="renderTeacherJournals()" />
+              </div>
+            </div>
+          </div>
+
+          <div id="teacherSummary" class="stats-grid" style="margin-top:20px"></div>
+          <div id="teacherClassGroups" class="mt-20"></div>
+
+          <div id="teacherEmpty" class="empty-state hidden">
+            <i class="fas fa-folder-open"></i>
+            <h3>Belum ada jurnal murid</h3>
+            <p>Tidak ada data jurnal untuk filter kelas yang dipilih.</p>
+          </div>
         </div>
 
         <!-- Stats Cards -->
-        <div class="stats-grid">
+        <div id="historyStatsGrid" class="stats-grid">
           <div class="stat-card purple">
             <div class="stat-icon"><i class="fas fa-book"></i></div>
             <div class="stat-info">
@@ -187,25 +256,25 @@
         </div>
 
         <!-- Recent Journals -->
-        <div class="dashboard-grid">
+        <div id="historyDashboardGrid" class="dashboard-grid">
           <div class="card">
             <div class="card-header">
               <h3><i class="fas fa-clock"></i> Jurnal Terbaru</h3>
-              <a class="link-sm" onclick="showPage('write')">Lihat semua</a>
+              <a id="historyViewAllLink" class="link-sm" onclick="showPage('write')">Lihat semua</a>
             </div>
             <div id="recentJournals" class="recent-list"></div>
           </div>
         </div>
 
         <!-- Subject Distribution -->
-        <div class="card mt-20">
+        <div id="historySubjectCard" class="card mt-20">
           <div class="card-header">
             <h3><i class="fas fa-chart-pie"></i> Distribusi Mata Pelajaran</h3>
           </div>
           <div id="subjectBars" class="subject-bars"></div>
         </div>
 
-        <div class="card mt-20 rekap-filter">
+        <div id="historyRekapFilterCard" class="card mt-20 rekap-filter">
           <div class="card-header">
             <h3><i class="fas fa-chart-line"></i> Rekap Jurnal</h3>
           </div>
@@ -304,14 +373,20 @@
               <div class="profile-class" id="profileClass"></div>
             </div>
             <div class="profile-stats">
-              <div class="pstat"><div class="pstat-num" id="pTotal">0</div><div class="pstat-label">Jurnal</div></div>
-              <div class="pstat"><div class="pstat-num" id="pStreak">0</div><div class="pstat-label">Streak</div></div>
-              <div class="pstat"><div class="pstat-num" id="pSubjects">0</div><div class="pstat-label">Mapel</div></div>
+              <div class="pstat"><div class="pstat-num" id="pTotal">0</div><div class="pstat-label" id="pLabelTotal">Jurnal</div></div>
+              <div class="pstat"><div class="pstat-num" id="pStreak">0</div><div class="pstat-label" id="pLabelMid">Streak</div></div>
+              <div class="pstat"><div class="pstat-num" id="pSubjects">0</div><div class="pstat-label" id="pLabelLast">Mapel</div></div>
             </div>
           </div>
 
           <div class="profile-right">
-            <div class="card">
+            <div class="card hidden" id="teacherProfileCard">
+              <div class="card-header"><h3><i class="fas fa-user-tie"></i> Profil Guru</h3></div>
+              <p class="text-muted">Akun guru bersifat view-only. Gunakan halaman History untuk memantau jurnal murid per kelas.</p>
+              <button class="btn-secondary" onclick="showPage('history')"><i class="fas fa-chart-bar"></i> Buka Dashboard Guru</button>
+            </div>
+
+            <div class="card" id="profileEditCard">
               <div class="card-header"><h3><i class="fas fa-edit"></i> Edit Profil</h3></div>
               <form onsubmit="saveProfile(event)">
                 <div class="form-group">
@@ -337,16 +412,22 @@
               </form>
             </div>
 
-            <div class="card mt-20">
+            <div class="card mt-20" id="profileExportCard">
               <div class="card-header"><h3><i class="fas fa-download"></i> Ekspor Data</h3></div>
-              <p class="text-muted">Unduh semua jurnal kamu dalam format JSON</p>
-              <div class="export-actions">
+              <p class="text-muted" id="exportDesc">Unduh semua jurnal kamu dalam format JSON</p>
+              <div class="export-actions" id="studentExportActions">
                 <button class="btn-secondary" onclick="exportJSON()"><i class="fas fa-file-code"></i> Ekspor JSON</button>
                 <button class="btn-secondary" onclick="exportCSV()"><i class="fas fa-file-csv"></i> Ekspor CSV</button>
               </div>
+              <div class="export-actions hidden" id="teacherExportActions" style="margin-top:12px">
+                <button class="btn-secondary" onclick="exportTeacherAllJSON()"><i class="fas fa-file-code"></i> Semua Jurnal Murid (JSON)</button>
+                <button class="btn-secondary" onclick="exportTeacherAllCSV()"><i class="fas fa-file-csv"></i> Semua Jurnal Murid (CSV)</button>
+                <button class="btn-secondary" onclick="exportTeacherFilteredJSON()"><i class="fas fa-filter"></i> Sesuai Filter (JSON)</button>
+                <button class="btn-secondary" onclick="exportTeacherFilteredCSV()"><i class="fas fa-filter"></i> Sesuai Filter (CSV)</button>
+              </div>
             </div>
 
-            <div class="card mt-20 danger-card">
+            <div class="card mt-20 danger-card" id="profileDangerCard">
               <div class="card-header"><h3><i class="fas fa-trash-alt"></i> Hapus Semua Data</h3></div>
               <p class="text-muted">Hapus semua jurnal kamu secara permanen. Tindakan ini tidak dapat dibatalkan.</p>
               <button class="btn-danger" onclick="deleteAllData()"><i class="fas fa-trash"></i> Hapus Semua Jurnal</button>
