@@ -29,6 +29,12 @@ const CLASS_GRADES = ['7', '8', '9'];
 const REGISTER_CLASS_OPTIONS = CLASS_GRADES.flatMap(g => CLASS_LETTERS.map(letter => `${g}${letter}`));
 const REGISTER_ABSEN_MAX = 40;
 
+// Debug: Log constants untuk memverifikasi
+console.log('CLASS_LETTERS:', CLASS_LETTERS);
+console.log('CLASS_GRADES:', CLASS_GRADES);
+console.log('REGISTER_CLASS_OPTIONS:', REGISTER_CLASS_OPTIONS);
+console.log('REGISTER_ABSEN_MAX:', REGISTER_ABSEN_MAX);
+
 // ===== STATE =====
 let currentUser      = null;
 let currentView      = 'grid';
@@ -280,7 +286,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // ===== AUTH =====
 function setSelectOptions(selectId, values, placeholder) {
   const select = document.getElementById(selectId);
-  if (!select) return;
+  console.log(`setSelectOptions('${selectId}'):`, select, 'values:', values.length);
+  
+  if (!select) {
+    console.error(`Select element dengan id '${selectId}' tidak ditemukan!`);
+    return;
+  }
 
   select.innerHTML = '';
   const first = document.createElement('option');
@@ -294,14 +305,19 @@ function setSelectOptions(selectId, values, placeholder) {
     option.textContent = value;
     select.appendChild(option);
   });
+  console.log(`${selectId} sudah diisi dengan ${values.length} opsi`);
 }
 
 function initRegisterForm() {
+  console.log('initRegisterForm() dipanggil, REGISTER_CLASS_OPTIONS:', REGISTER_CLASS_OPTIONS);
   setSelectOptions('regClass', REGISTER_CLASS_OPTIONS, '-- Pilih Kelas --');
 
   const noAbsenOptions = Array.from({ length: REGISTER_ABSEN_MAX }, (_, i) => String(i + 1));
+  console.log('noAbsenOptions:', noAbsenOptions);
   setSelectOptions('regNumber', noAbsenOptions, '-- Pilih Nomor Absen --');
+  
   onRegisterRoleChange();
+  console.log('initRegisterForm() selesai');
 }
 
 function onRegisterRoleChange() {
