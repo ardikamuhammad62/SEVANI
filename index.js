@@ -1062,7 +1062,8 @@ async function createJournalFromHabit(idx, date, data) {
 
   // Simpan ke MySQL
   try {
-    await fetch('api/save_journal.php', {
+    console.log('Saving journal:', entry);
+    const response = await fetch('api/save_journal.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1070,6 +1071,13 @@ async function createJournalFromHabit(idx, date, data) {
         ...entry
       })
     });
+    const result = await response.json();
+    console.log('Journal save response:', result, 'status:', response.status);
+    if (result.status === 'success') {
+      console.log('Journal saved successfully');
+    } else {
+      console.error('Failed to save journal:', result.message);
+    }
   } catch(e) { console.error('Gagal menyimpan jurnal ke DB:', e); }
 }
 

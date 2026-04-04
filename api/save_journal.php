@@ -1,5 +1,6 @@
 <?php
 // api/save_journal.php
+error_reporting(0);
 header("Content-Type: application/json; charset=UTF-8");
 require 'koneksi.php';
 
@@ -17,7 +18,8 @@ if (!empty($data->user_id) && !empty($data->id)) {
     $user_id = $conn->real_escape_string($data->user_id);
 
     if (isGuruByUserId($conn, $user_id)) {
-        echo json_encode(["status" => "error", "message" => "Akun guru hanya bisa melihat jurnal murid."]);
+        http_response_code(403);
+        echo json_encode(["status" => "error", "message" => "Akun guru hanya bisa melihat jurnal murid."], JSON_UNESCAPED_UNICODE);
         $conn->close();
         exit();
     }
@@ -36,10 +38,14 @@ if (!empty($data->user_id) && !empty($data->id)) {
               VALUES ('$id', '$user_id', '$title', '$tanggal', '$subject', '$category', '$mood', $rating, '$content', '$keypoints', '$questions')";
 
     if ($conn->query($query) === TRUE) {
-        echo json_encode(["status" => "success"]);
+        echo json_encode(["status" => "success"], JSON_UNESCAPED_UNICODE);
     } else {
-        echo json_encode(["status" => "error", "message" => $conn->error]);
+        http_response_code(500);
+        echo json_encode(["status" => "error", "message" => $conn->error], JSON_UNESCAPED_UNICODE);
     }
+} else {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "user_id dan id diperlukan"], JSON_UNESCAPED_UNICODE);
 }
 $conn->close();
 ?>

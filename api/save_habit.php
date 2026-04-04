@@ -1,5 +1,6 @@
 <?php
 // api/save_habit.php
+error_reporting(0);
 header("Content-Type: application/json; charset=UTF-8");
 require 'koneksi.php';
 
@@ -16,7 +17,8 @@ if (!empty($data->user_id) && !empty($data->tanggal) && isset($data->habit_data)
     $user_id = $conn->real_escape_string($data->user_id);
 
     if (isGuruByUserId($conn, $user_id)) {
-        echo json_encode(["status" => "error", "message" => "Akun guru hanya bisa melihat jurnal murid."]);
+        http_response_code(403);
+        echo json_encode(["status" => "error", "message" => "Akun guru hanya bisa melihat jurnal murid."], JSON_UNESCAPED_UNICODE);
         $conn->close();
         exit();
     }
@@ -30,10 +32,13 @@ if (!empty($data->user_id) && !empty($data->tanggal) && isset($data->habit_data)
               ON DUPLICATE KEY UPDATE habit_data = '$habit_data'";
 
     if ($conn->query($query) === TRUE) {
-        echo json_encode(["status" => "success", "message" => "Kebiasaan disimpan"]);
+        echo json_encode(["status" => "success", "message" => "Kebiasaan disimpan"], JSON_UNESCAPED_UNICODE);
     } else {
-        echo json_encode(["status" => "error", "message" => $conn->error]);
+        http_response_code(500);
+        echo json_encode(["status" => "error", "message" => $conn->error], JSON_UNESCAPED_UNICODE);
     }
-}
+} else {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "user_id, tanggal, dan habit_data diperlukan"], JSON_UNESCAPED_UNICODE);
 $conn->close();
 ?>
