@@ -16,3 +16,40 @@ Stack trace:
 [04-Apr-2026 11:24:49 UTC] save_journal.php - Query: INSERT INTO journals (id, user_id, title, tanggal, subject, category, mood, rating, content, keypoints, questions) 
               VALUES ('mnk8wp5anop5m', '1', '🌅 Bangun Pagi', '2026-04-04', 'Bangun Pagi', 'Bangun Pagi', '😊', 7, '<b>Waktu:</b> 06:00<br><b>Keterangan:</b> bangun', '', '')
 [04-Apr-2026 11:24:49 UTC] save_journal.php - SUCCESS: Journal saved with id=mnk8wp5anop5m
+[04-Apr-2026 11:28:45 UTC] ====== save_habit.php called at 2026-04-04 11:28:45 ======
+[04-Apr-2026 11:28:45 UTC] save_habit.php - Raw input: {"user_id":"1","tanggal":"2026-04-04","habit_data":[{"done":true,"waktu":"00:00","keterangan":"bangun siang","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""}]}
+[04-Apr-2026 11:28:45 UTC] save_journal.php - Raw input: {"user_id":"1","id":"mnk91r1gaa1yp","title":"🌅 Bangun Pagi","date":"2026-04-04","subject":"Bangun Pagi","category":"Bangun Pagi","mood":"😊","rating":7,"content":"<b>Waktu:</b> 00:00<br><b>Keterangan:</b> bangun siang","keypoints":"","questions":""}
+[04-Apr-2026 11:28:45 UTC] save_habit.php - Decoded data: {"user_id":"1","tanggal":"2026-04-04","habit_data":[{"done":true,"waktu":"00:00","keterangan":"bangun siang","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""}]}
+[04-Apr-2026 11:28:45 UTC] save_journal.php - Decoded data: {"user_id":"1","id":"mnk91r1gaa1yp","title":"\ud83c\udf05 Bangun Pagi","date":"2026-04-04","subject":"Bangun Pagi","category":"Bangun Pagi","mood":"\ud83d\ude0a","rating":7,"content":"<b>Waktu:<\/b> 00:00<br><b>Keterangan:<\/b> bangun siang","keypoints":"","questions":""}
+[04-Apr-2026 11:28:45 UTC] save_habit.php - Valid data received: user_id=1, tanggal=2026-04-04
+[04-Apr-2026 11:28:45 UTC] save_journal.php - Valid data received: user_id=1, id=mnk91r1gaa1yp
+[04-Apr-2026 11:28:45 UTC] save_journal.php - Fields: id=mnk91r1gaa1yp, user_id=1, tanggal=2026-04-04, title=🌅 Bangun Pagi
+[04-Apr-2026 11:28:45 UTC] save_habit.php - Fields: user_id=1, tanggal=2026-04-04, habit_data=[{\"done\":true,\"waktu\":\"00:00\",\"keterangan\"...
+[04-Apr-2026 11:28:45 UTC] save_journal.php - Query: INSERT INTO journals (id, user_id, title, tanggal, subject, category, mood, rating, content, keypoints, questions) 
+              VALUES ('mnk91r1gaa1yp', '1', '🌅 Bangun Pagi', '2026-04-04', 'Bangun Pagi', 'Bangun Pagi', '😊', 7, '<b>Waktu:</b> 00:00<br><b>Keterangan:</b> bangun siang', '', '')
+[04-Apr-2026 11:28:45 UTC] save_habit.php - Query: INSERT INTO daily_habits (user_id, tanggal, habit_data) 
+              VALUES ('1', '2026-04-04', '...
+[04-Apr-2026 11:28:45 UTC] save_journal.php - SUCCESS: Journal saved with id=mnk91r1gaa1yp
+[04-Apr-2026 11:28:45 UTC] save_habit.php - SUCCESS: Habit saved for user_id=1, tanggal=2026-04-04
+[04-Apr-2026 11:30:22 UTC] ====== save_habit.php called at 2026-04-04 11:30:22 ======
+[04-Apr-2026 11:30:22 UTC] save_journal.php - Raw input: {"user_id":3,"id":"mnk93tqv47rp1","title":"🙏 Beribadah","date":"2026-04-04","subject":"Beribadah","category":"Beribadah","mood":"😊","rating":7,"content":"<b>Agama:</b> Katolik<br><b>Waktu Ibadah:</b> 05:00<br><b>Keterangan:</b> berdoa","keypoints":"","questions":""}
+[04-Apr-2026 11:30:22 UTC] save_journal.php - Decoded data: {"user_id":3,"id":"mnk93tqv47rp1","title":"\ud83d\ude4f Beribadah","date":"2026-04-04","subject":"Beribadah","category":"Beribadah","mood":"\ud83d\ude0a","rating":7,"content":"<b>Agama:<\/b> Katolik<br><b>Waktu Ibadah:<\/b> 05:00<br><b>Keterangan:<\/b> berdoa","keypoints":"","questions":""}
+[04-Apr-2026 11:30:22 UTC] save_journal.php - Valid data received: user_id=3, id=mnk93tqv47rp1
+[04-Apr-2026 11:30:22 UTC] save_journal.php - Fields: id=mnk93tqv47rp1, user_id=3, tanggal=2026-04-04, title=🙏 Beribadah
+[04-Apr-2026 11:30:22 UTC] save_journal.php - Query: INSERT INTO journals (id, user_id, title, tanggal, subject, category, mood, rating, content, keypoints, questions) 
+              VALUES ('mnk93tqv47rp1', '3', '🙏 Beribadah', '2026-04-04', 'Beribadah', 'Beribadah', '😊', 7, '<b>Agama:</b> Katolik<br><b>Waktu Ibadah:</b> 05:00<br><b>Keterangan:</b> berdoa', '', '')
+[04-Apr-2026 11:30:22 UTC] save_journal.php - SUCCESS: Journal saved with id=mnk93tqv47rp1
+[04-Apr-2026 11:30:22 UTC] save_habit.php - Raw input: {"user_id":3,"tanggal":"2026-04-04","habit_data":[{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":true,"waktu":"05:00","keterangan":"berdoa","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""}]}
+[04-Apr-2026 11:30:22 UTC] save_habit.php - Decoded data: {"user_id":3,"tanggal":"2026-04-04","habit_data":[{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":true,"waktu":"05:00","keterangan":"berdoa","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""}]}
+[04-Apr-2026 11:30:22 UTC] save_habit.php - Valid data received: user_id=3, tanggal=2026-04-04
+[04-Apr-2026 11:30:22 UTC] save_habit.php - Fields: user_id=3, tanggal=2026-04-04, habit_data=[{\"done\":false,\"waktu\":\"\",\"keterangan\":\"\...
+[04-Apr-2026 11:30:22 UTC] save_habit.php - Query: INSERT INTO daily_habits (user_id, tanggal, habit_data) 
+              VALUES ('3', '2026-04-04', '...
+[04-Apr-2026 11:30:22 UTC] save_habit.php - SUCCESS: Habit saved for user_id=3, tanggal=2026-04-04
+[04-Apr-2026 11:31:29 UTC] ====== save_habit.php called at 2026-04-04 11:31:29 ======
+[04-Apr-2026 11:31:29 UTC] save_habit.php - Raw input: {"user_id":"2","tanggal":"2026-04-04","habit_data":[{"done":true,"waktu":"00:00","keterangan":"bangun","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""}]}
+[04-Apr-2026 11:31:29 UTC] save_journal.php - Raw input: {"user_id":"2","id":"mnk959uf7edck","title":"🌅 Bangun Pagi","date":"2026-04-04","subject":"Bangun Pagi","category":"Bangun Pagi","mood":"😊","rating":7,"content":"<b>Waktu:</b> 00:00<br><b>Keterangan:</b> bangun","keypoints":"","questions":""}
+[04-Apr-2026 11:31:29 UTC] save_habit.php - Decoded data: {"user_id":"2","tanggal":"2026-04-04","habit_data":[{"done":true,"waktu":"00:00","keterangan":"bangun","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""},{"done":false,"waktu":"","keterangan":"","mapel":""}]}
+[04-Apr-2026 11:31:29 UTC] save_journal.php - Decoded data: {"user_id":"2","id":"mnk959uf7edck","title":"\ud83c\udf05 Bangun Pagi","date":"2026-04-04","subject":"Bangun Pagi","category":"Bangun Pagi","mood":"\ud83d\ude0a","rating":7,"content":"<b>Waktu:<\/b> 00:00<br><b>Keterangan:<\/b> bangun","keypoints":"","questions":""}
+[04-Apr-2026 11:31:29 UTC] save_habit.php - Valid data received: user_id=2, tanggal=2026-04-04
+[04-Apr-2026 11:31:29 UTC] save_journal.php - Valid data received: user_id=2, id=mnk959uf7edck

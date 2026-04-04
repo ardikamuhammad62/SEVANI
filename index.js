@@ -263,23 +263,31 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initRegisterForm();
   const session = getSession();
+  console.log('DOMContentLoaded: Retrieved session from localStorage:', session);
   if (session) {
+    console.log('Session exists, verifying with server. Username:', session.username);
     fetch('api/verify_session.php?username=' + encodeURIComponent(session.username))
       .then(r => r.json())
       .then(data => {
+        console.log('verify_session.php response:', data);
         if (data.status === 'success') {
-          currentUser = data.user;
+          currentUser = normalizeUser(data.user);
+          console.log('Session verified! currentUser after normalization:', currentUser);
+          console.log('isTeacher():', isTeacher());
           launchApp();
         } else {
+          console.log('Session verification failed:', data.message);
           clearSession();
           document.getElementById('authScreen').classList.remove('hidden');
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('Error verifying session:', err);
         clearSession();
         document.getElementById('authScreen').classList.remove('hidden');
       });
   } else {
+    console.log('No session found in localStorage');
     document.getElementById('authScreen').classList.remove('hidden');
   }
   // set today's date
@@ -378,8 +386,9 @@ async function handleLogin(e) {
     });
 
     if (result.status === 'success') {
-      currentUser = result.user;
-      setSession(result.user); // Simpan data user lengkap
+      currentUser = normalizeUser(result.user);
+      console.log('Login successful! currentUser:', currentUser, 'isTeacher:', isTeacher());
+      setSession(currentUser); // Simpan data user lengkap
       launchApp();
     } else {
       showError('loginError', result.message);
@@ -444,8 +453,9 @@ async function handleRegister(e) {
     });
 
     if (result.status === 'success') {
-      currentUser = result.user;
-      setSession(result.user);
+      currentUser = normalizeUser(result.user);
+      console.log('Registration successful! currentUser:', currentUser, 'isTeacher:', isTeacher());
+      setSession(currentUser);
       launchApp();
     } else {
       showError('registerError', result.message);
