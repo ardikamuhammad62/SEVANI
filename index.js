@@ -10,6 +10,8 @@ const DB_USERS     = 'ejournal_users';
 const DB_SESSION   = 'ejournal_session';
 const DB_JOURNALS  = 'ejournal_journals';
 const DB_HABITS    = 'sevani_habits';
+const DB_CURRENT_USER = 'sevani_current_user';
+const DB_GENDER_MAP = 'sevani_gender_map';
 
 // ===== 7 KEBIASAAN =====
 const HABITS = [
@@ -22,6 +24,10 @@ const HABITS = [
   { num: 7, emoji: '😴', name: 'Tidur Tepat Waktu' },
 ];
 const HABIT_NAMES = new Set(HABITS.map(h => h.name));
+const CLASS_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+const CLASS_GRADES = ['7', '8', '9'];
+const REGISTER_CLASS_OPTIONS = CLASS_GRADES.flatMap(g => CLASS_LETTERS.map(letter => `${g}${letter}`));
+const REGISTER_ABSEN_MAX = 40;
 
 // ===== STATE =====
 let currentUser      = null;
@@ -30,6 +36,7 @@ let searchFilter     = 'all';
 let currentModalId   = null;
 let pendingDeleteId  = null;
 let currentHabitIndex = null;
+let teacherJournals  = [];
 
 // State Lokal pengganti localStorage
 let localJournals = []; 
@@ -39,6 +46,151 @@ let localHabits = {};
 const getSession  = () => localStorage.getItem(DB_SESSION);
 const setSession  = (u) => localStorage.setItem(DB_SESSION, u);
 const clearSession= () => localStorage.removeItem(DB_SESSION);
+const clearStoredUser = () => localStorage.removeItem(DB_CURRENT_USER);
+
+function getStoredUser() {
+  try {
+    const raw = localStorage.getItem(DB_CURRENT_USER);
+    return raw ? JSON.parse(raw) : null;
+  } catch (_e) {
+    return null;
+  }
+}
+
+function setStoredUser(user) {
+  localStorage.setItem(DB_CURRENT_USER, JSON.stringify(user));
+}
+
+function getGenderMap() {
+  try {
+    const raw = localStorage.getItem(DB_GENDER_MAP);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return (parsed && typeof parsed === 'object') ? parsed : {};
+  } catch (_e) {
+    return {};
+  }
+}
+
+function rememberUserGender(username, gender) {
+  if (!username) return;
+  const normalized = normalizeGender(gender);
+  if (!normalized) return;
+  const map = getGenderMap();
+  map[username] = normalized;
+  localStorage.setItem(DB_GENDER_MAP, JSON.stringify(map));
+}
+
+function getRememberedGender(username) {
+  if (!username) return '';
+  const map = getGenderMap();
+  return normalizeGender(map[username]);
+}
+
+function normalizeGender(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (['l', 'laki', 'laki-laki', 'pria', 'male'].includes(raw)) return 'laki-laki';
+  if (['p', 'perempuan', 'wanita', 'female'].includes(raw)) return 'perempuan';
+  return '';
+}
+
+function getAvatarAsset(gender) {
+  return normalizeGender(gender) === 'perempuan'
+    ? 'assets/female.png'
+    : 'assets/male.png';
+}
+
+function setAvatarByGender(elementId, gender, fallbackText = '') {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  const normalized = normalizeGender(gender);
+
+  if (!normalized) {
+    el.classList.remove('gender-avatar');
+    el.style.backgroundImage = '';
+    el.textContent = fallbackText;
+    return;
+  }
+
+  el.textContent = '';
+  el.classList.add('gender-avatar');
+  el.style.backgroundImage = `url('${getAvatarAsset(normalized)}')`;
+}
+
+function buildUserSubLabel(user) {
+  const genderLabel = user.gender === 'perempuan' ? 'Perempuan' : 'Laki-laki';
+  if (user.role === 'guru') {
+    return `Guru | ${genderLabel}`;
+  }
+  const kelasLabel = user.noAbsen
+    ? `${user.kelas} | Absen ${user.noAbsen}`
+    : user.kelas;
+  return `${kelasLabel} | ${genderLabel}`;
+}
+
+function isTeacher() {
+  return currentUser?.role === 'guru';
+}
+
+function getClassSortKey(className) {
+  const raw = String(className || '').trim().toUpperCase();
+  const m = raw.match(/^(\d+)([A-Z])$/);
+  if (!m) return Number.MAX_SAFE_INTEGER;
+  const grade = Number(m[1]);
+  const letterIdx = CLASS_LETTERS.indexOf(m[2]);
+  return (grade * 100) + (letterIdx < 0 ? 99 : letterIdx);
+}
+
+function normalizeClassName(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+function normalizeUser(user) {
+  if (!user) return null;
+  const rawKelas = (user.kelas || '').toString();
+  const role = (user.role || (rawKelas.toLowerCase() === 'guru' ? 'guru' : 'murid')).toString().toLowerCase();
+  const username = (user.username || '').toString();
+  const gender = normalizeGender(user.gender ?? user.jenisKelamin ?? user.jenis_kelamin ?? getRememberedGender(username));
+  return {
+    ...user,
+    id: user.id ?? null,
+    role,
+    name: user.name || user.nama || '',
+    gender,
+    kelas: rawKelas,
+    username,
+    nisn: user.nisn || (role === 'murid' ? username : ''),
+    nip: user.nip || (role === 'guru' ? username : ''),
+    noAbsen: role === 'guru' ? '' : (user.noAbsen ?? user.no_absen ?? ''),
+    agama: role === 'guru' ? '' : (user.agama ?? '')
+  };
+}
+
+async function requestJson(url, options = {}) {
+  const response = await fetch(url, options);
+  const raw = await response.text();
+
+  let result = null;
+  if (raw) {
+    try {
+      result = JSON.parse(raw);
+    } catch (_e) {
+      result = null;
+    }
+  }
+
+  if (!response.ok) {
+    if (response.status === 405) {
+      throw new Error('Endpoint API menolak request. Jalankan proyek lewat server PHP (XAMPP/Laragon), bukan Live Server 5500.');
+    }
+    throw new Error(result?.message || `HTTP ${response.status}`);
+  }
+
+  if (!result) {
+    throw new Error('Respons server bukan JSON valid. Pastikan endpoint PHP berjalan benar.');
+  }
+
+  return result;
+}
 
 function getJournals() {
   return localJournals;
@@ -79,11 +231,17 @@ async function setHabitState(date, state) {
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  initRegisterForm();
   const session = getSession();
   if (session) {
-    const users = getUsers();
-    const user = users.find(u => u.username === session);
-    if (user) { currentUser = user; launchApp(); return; }
+    const user = normalizeUser(getStoredUser());
+    if (user?.username === session) {
+      currentUser = user;
+      launchApp();
+      return;
+    }
+    clearSession();
+    clearStoredUser();
   }
   document.getElementById('authScreen').classList.remove('hidden');
   // set today's date
@@ -98,11 +256,64 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ===== AUTH =====
+function setSelectOptions(selectId, values, placeholder) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+
+  select.innerHTML = '';
+  const first = document.createElement('option');
+  first.value = '';
+  first.textContent = placeholder;
+  select.appendChild(first);
+
+  values.forEach(value => {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+  });
+}
+
+function initRegisterForm() {
+  setSelectOptions('regClass', REGISTER_CLASS_OPTIONS, '-- Pilih Kelas --');
+
+  const noAbsenOptions = Array.from({ length: REGISTER_ABSEN_MAX }, (_, i) => String(i + 1));
+  setSelectOptions('regNumber', noAbsenOptions, '-- Pilih Nomor Absen --');
+  onRegisterRoleChange();
+}
+
+function onRegisterRoleChange() {
+  const roleEl = document.getElementById('regRole');
+  if (!roleEl) return;
+
+  const isGuru = roleEl.value === 'guru';
+  const studentFields = document.getElementById('studentRegisterFields');
+  const teacherFields = document.getElementById('teacherRegisterFields');
+  studentFields?.classList.toggle('hidden', isGuru);
+  teacherFields?.classList.toggle('hidden', !isGuru);
+
+  const setRequired = (id, required) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.required = required;
+    if (!required) input.value = '';
+  };
+
+  setRequired('regClass', !isGuru);
+  setRequired('regNumber', !isGuru);
+  setRequired('regNisn', !isGuru);
+  setRequired('regReligion', !isGuru);
+  setRequired('regNip', isGuru);
+
+  clearError('registerError');
+}
+
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) =>
     b.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register')));
   document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
   document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
+  if (tab === 'register') onRegisterRoleChange();
   clearError('loginError'); clearError('registerError');
 }
 
@@ -112,65 +323,106 @@ async function handleLogin(e) {
   const password = document.getElementById('loginPassword').value;
 
   try {
-    const response = await fetch('api/login.php', {
+    const result = await requestJson('api/login.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     });
 
-    const result = await response.json();
-
     if (result.status === 'success') {
-      currentUser = result.user;
-      setSession(result.user.username); // Tetap simpan sesi lokal untuk menandai user sedang login
+      currentUser = normalizeUser(result.user);
+      if (!currentUser.username) {
+        showError('loginError', 'Data user dari server tidak valid.');
+        return;
+      }
+      rememberUserGender(currentUser.username, currentUser.gender);
+      setSession(currentUser.username);
+      setStoredUser(currentUser);
       launchApp();
     } else {
       showError('loginError', result.message);
     }
   } catch (error) {
-    showError('loginError', 'Terjadi kesalahan pada server.');
+    showError('loginError', error.message || 'Terjadi kesalahan pada server.');
     console.error('Error:', error);
   }
 }
 
 async function handleRegister(e) {
   e.preventDefault();
-  const nama     = document.getElementById('regName').value.trim(); // Sesuaikan variabel nama
-  const kelas    = document.getElementById('regClass').value.trim();
-  const noAbsen  = document.getElementById('regNumber').value.trim();
-  const username = document.getElementById('regUsername').value.trim();
-  const agama    = document.getElementById('regReligion').value;
-  const password = document.getElementById('regPassword').value;
+  const role = document.getElementById('regRole').value;
+  const nama = document.getElementById('regName').value.trim();
+  const gender = normalizeGender(document.getElementById('regGender').value);
 
-  if (password.length < 6) { 
-    showError('registerError', 'Password minimal 6 karakter.'); 
-    return; 
+  if (!nama) {
+    showError('registerError', 'Nama wajib diisi.');
+    return;
+  }
+
+  if (!gender) {
+    showError('registerError', 'Jenis kelamin wajib dipilih.');
+    return;
+  }
+
+  const payload = { role, nama, gender };
+
+  if (role === 'guru') {
+    const nip = document.getElementById('regNip').value.replace(/\D/g, '');
+    if (!/^\d{18}$/.test(nip)) {
+      showError('registerError', 'NIP harus terdiri dari 18 digit angka.');
+      return;
+    }
+    payload.nip = nip;
+  } else {
+    const kelas = document.getElementById('regClass').value;
+    const noAbsen = document.getElementById('regNumber').value;
+    const agama = document.getElementById('regReligion').value;
+    const nisn = document.getElementById('regNisn').value.replace(/\D/g, '');
+
+    if (!kelas || !noAbsen || !agama) {
+      showError('registerError', 'Kelas, nomor absen, dan agama wajib diisi.');
+      return;
+    }
+    if (!/^\d{10}$/.test(nisn)) {
+      showError('registerError', 'NISN harus terdiri dari 10 digit angka.');
+      return;
+    }
+
+    payload.kelas = kelas;
+    payload.noAbsen = noAbsen;
+    payload.agama = agama;
+    payload.nisn = nisn;
   }
 
   try {
-    const response = await fetch('api/register.php', {
+    const result = await requestJson('api/register.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nama, kelas, noAbsen, agama, username, password })
+      body: JSON.stringify(payload)
     });
 
-    const result = await response.json();
-
     if (result.status === 'success') {
-      currentUser = result.user;
-      setSession(result.user.username);
+      currentUser = normalizeUser(result.user);
+      if (!currentUser.username) {
+        showError('registerError', 'Data user dari server tidak valid.');
+        return;
+      }
+      rememberUserGender(currentUser.username, currentUser.gender);
+      setSession(currentUser.username);
+      setStoredUser(currentUser);
       launchApp();
     } else {
       showError('registerError', result.message);
     }
   } catch (error) {
-    showError('registerError', 'Terjadi kesalahan pada server.');
+    showError('registerError', error.message || 'Terjadi kesalahan pada server.');
     console.error('Error:', error);
   }
 }
 
 function handleLogout() {
   clearSession();
+  clearStoredUser();
   currentUser = null;
   location.reload();
 }
@@ -207,32 +459,197 @@ async function launchApp() {
   document.getElementById('authScreen').classList.add('hidden');
   document.getElementById('appScreen').classList.remove('hidden');
   updateUserUI();
+  configureRoleUI();
   
-  // Mengambil data dari MySQL saat aplikasi berjalan
-  try {
-    const res = await fetch('api/get_data.php?user_id=' + currentUser.id);
-    const data = await res.json();
-    if (data.status === 'success') {
-      localHabits = data.habits || {};
-      localJournals = data.journals || [];
+  if (isTeacher()) {
+    await loadTeacherJournals();
+  } else {
+    // Mengambil data dari MySQL saat aplikasi berjalan
+    if (currentUser?.id) {
+      try {
+        const data = await requestJson('api/get_data.php?user_id=' + currentUser.id);
+        if (data.status === 'success') {
+          localHabits = data.habits || {};
+          localJournals = data.journals || [];
+        }
+      } catch (error) {
+        console.error('Gagal memuat data dari server:', error);
+      }
     }
-  } catch (error) {
-    console.error("Gagal memuat data dari server:", error);
   }
 
   document.getElementById('jDate').value = todayStr();
-  showPage('write');
+  showPage(isTeacher() ? 'history' : 'write');
 }
 
 function updateUserUI() {
   const initials = getInitials(currentUser.name);
-  document.getElementById('sidebarAvatar').textContent = initials;
+  setAvatarByGender('sidebarAvatar', currentUser.gender, initials);
   document.getElementById('sidebarName').textContent = currentUser.name;
-  const kelasInfo = currentUser.noAbsen
-    ? `${currentUser.kelas} | Absen ${currentUser.noAbsen}`
-    : currentUser.kelas;
-  document.getElementById('sidebarClass').textContent = kelasInfo;
-  document.getElementById('topbarAvatar').textContent = initials;
+  const kelasInfo = buildUserSubLabel(currentUser);
+  document.getElementById('sidebarClass').textContent = kelasInfo || '-';
+  setAvatarByGender('topbarAvatar', currentUser.gender, initials);
+}
+
+function configureRoleUI() {
+  const teacher = isTeacher();
+  const toggle = (id, hidden) => document.getElementById(id)?.classList.toggle('hidden', hidden);
+
+  document.body.classList.toggle('role-teacher', teacher);
+
+  toggle('navWrite', teacher);
+  toggle('navProfile', false);
+  toggle('historyWriteBtn', teacher);
+  toggle('historyViewAllLink', teacher);
+
+  toggle('historyStatsGrid', teacher);
+  toggle('historyDashboardGrid', teacher);
+  toggle('historySubjectCard', teacher);
+  toggle('historyRekapFilterCard', teacher);
+  toggle('rekapStats', teacher);
+  toggle('rekapTimeline', teacher);
+  toggle('rekapEmpty', teacher);
+  toggle('rekapPlaceholder', teacher);
+  toggle('teacherHistorySection', !teacher);
+
+  const topbarAvatar = document.getElementById('topbarAvatar');
+  if (topbarAvatar) {
+    topbarAvatar.setAttribute('onclick', "showPage('profile')");
+  }
+
+  if (teacher) {
+    const start = document.getElementById('teacherStart');
+    const end = document.getElementById('teacherEnd');
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    if (start && !start.value) start.value = first;
+    if (end && !end.value) end.value = todayStr();
+
+    const greet = document.getElementById('greetingText');
+    const greetDate = document.getElementById('greetingDate');
+    if (greet) greet.textContent = 'Dashboard Guru';
+    if (greetDate) greetDate.textContent = 'Pantau jurnal murid berdasarkan kelas';
+  }
+}
+
+function normalizeTeacherJournal(row) {
+  return {
+    ...row,
+    date: row.date || row.tanggal || '',
+    student_name: row.student_name || '-',
+    student_class: normalizeClassName(row.student_class || row.kelas || ''),
+    student_no_absen: row.student_no_absen || row.no_absen || '',
+    student_id: row.student_id || row.user_id || ''
+  };
+}
+
+async function loadTeacherJournals() {
+  if (!currentUser?.id) return;
+
+  try {
+    const data = await requestJson('api/get_teacher_journals.php?user_id=' + currentUser.id);
+    if (data.status === 'success') {
+      teacherJournals = (data.journals || []).map(normalizeTeacherJournal);
+      localJournals = teacherJournals;
+      localHabits = {};
+    } else {
+      teacherJournals = [];
+      localJournals = [];
+      showToast(data.message || 'Gagal memuat jurnal murid.', 'error');
+    }
+  } catch (error) {
+    teacherJournals = [];
+    localJournals = [];
+    showToast('Gagal memuat jurnal murid dari server.', 'error');
+    console.error('Gagal memuat jurnal guru:', error);
+  }
+}
+
+function renderTeacherJournals() {
+  if (!isTeacher()) return;
+
+  const grade = document.getElementById('teacherGradeFilter')?.value || 'all';
+  const classLetter = document.getElementById('teacherClassFilter')?.value || 'all';
+  const start = document.getElementById('teacherStart')?.value || '';
+  const end = document.getElementById('teacherEnd')?.value || '';
+
+  let journals = teacherJournals.slice();
+
+  if (grade !== 'all') {
+    journals = journals.filter(j => normalizeClassName(j.student_class).startsWith(grade));
+  }
+
+  if (classLetter !== 'all') {
+    journals = journals.filter(j => normalizeClassName(j.student_class).endsWith(classLetter));
+  }
+
+  if (start) journals = journals.filter(j => j.date >= start);
+  if (end) journals = journals.filter(j => j.date <= end);
+
+  localJournals = journals;
+
+  const summary = document.getElementById('teacherSummary');
+  const groups = document.getElementById('teacherClassGroups');
+  const empty = document.getElementById('teacherEmpty');
+  if (!summary || !groups || !empty) return;
+
+  const uniqueStudents = new Set(journals.map(j => String(j.student_id || j.user_id || ''))).size;
+  const uniqueClasses = new Set(journals.map(j => normalizeClassName(j.student_class))).size;
+
+  summary.innerHTML = `
+    <div class="stat-card purple">
+      <div class="stat-icon"><i class="fas fa-book"></i></div>
+      <div class="stat-info">
+        <div class="stat-num">${journals.length}</div>
+        <div class="stat-label">Total Jurnal Murid</div>
+      </div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-icon"><i class="fas fa-users"></i></div>
+      <div class="stat-info">
+        <div class="stat-num">${uniqueStudents}</div>
+        <div class="stat-label">Murid Aktif</div>
+      </div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon"><i class="fas fa-school"></i></div>
+      <div class="stat-info">
+        <div class="stat-num">${uniqueClasses}</div>
+        <div class="stat-label">Kelas Aktif</div>
+      </div>
+    </div>
+  `;
+
+  if (!journals.length) {
+    groups.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  empty.classList.add('hidden');
+
+  const grouped = {};
+  journals.forEach(j => {
+    const key = normalizeClassName(j.student_class) || '-';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(j);
+  });
+
+  const orderedClasses = Object.keys(grouped).sort((a, b) => getClassSortKey(a) - getClassSortKey(b));
+  groups.innerHTML = orderedClasses.map(className => {
+    const classJournals = grouped[className];
+    return `
+      <div class="card teacher-class-card mt-20">
+        <div class="card-header">
+          <h3><i class="fas fa-school"></i> Kelas ${className}</h3>
+          <span class="badge badge-subject"><i class="fas fa-book-open"></i> ${classJournals.length} jurnal</span>
+        </div>
+        <div class="journals-grid">
+          ${classJournals.map(j => buildJournalCard(j)).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function getInitials(name) {
@@ -241,29 +658,35 @@ function getInitials(name) {
 
 // ===== NAVIGATION =====
 function showPage(page) {
+  if (isTeacher() && page !== 'history' && page !== 'profile') {
+    page = 'history';
+  }
+
   document.querySelectorAll('.page').forEach(p => {
     p.classList.toggle('active', p.id === 'page-' + page);
     p.classList.toggle('hidden', p.id !== 'page-' + page);
   });
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const map = { write: 0, history: 1, profile: 2 };
-  const idx = map[page];
-  if (idx !== undefined) {
-    document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
-  }
+  document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
 
-  const titles = { history: 'History', write: 'Tulis Jurnal', journals: 'Jurnal Saya', profile: 'Profil' };
+  const titles = isTeacher()
+    ? { history: 'Jurnal Murid', profile: 'Profil Guru' }
+    : { history: 'History', write: 'Tulis Jurnal', journals: 'Jurnal Saya', profile: 'Profil' };
   document.getElementById('topbarTitle').textContent = titles[page] || '';
 
   closeSidebarMobile();
 
   if (page === 'history') {
-    renderDashboard();
-    initRekapPage();
+    if (isTeacher()) {
+      renderTeacherJournals();
+    } else {
+      renderDashboard();
+      initRekapPage();
+    }
   }
-  if (page === 'journals')   renderJournals();
-  if (page === 'profile')    renderProfile();
-  if (page === 'write') {
+  if (page === 'journals' && !isTeacher()) renderJournals();
+  if (page === 'profile') renderProfile();
+  if (page === 'write' && !isTeacher()) {
     renderHabitCards();
     renderJournals();
   }
@@ -705,11 +1128,23 @@ function renderJournals() {
 
 function buildJournalCard(j) {
   const preview = j.content.replace(/<[^>]*>/g, '').slice(0, 120) + (j.content.length > 120 ? '...' : '');
+  const teacherMeta = isTeacher()
+    ? `<div class="jcard-student-meta"><i class="fas fa-user-graduate"></i> ${escHtml(j.student_name || '-')} (${escHtml(j.student_class || '-')}${j.student_no_absen ? ` | Absen ${escHtml(String(j.student_no_absen))}` : ''})</div>`
+    : '';
+  const actionButtons = isTeacher()
+    ? ''
+    : `
+        <div class="jcard-actions" onclick="event.stopPropagation()">
+          <button class="jcard-btn edit" onclick="editJournal('${j.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+          <button class="jcard-btn del"  onclick="confirmDelete('${j.id}')" title="Hapus"><i class="fas fa-trash"></i></button>
+        </div>
+      `;
   return `
     <div class="journal-card" onclick="openModal('${j.id}')">
       <div class="jcard-head">
         <div class="jcard-title">${escHtml(j.title)}</div>
       </div>
+      ${teacherMeta}
       <div class="jcard-meta">
         <span class="badge badge-subject"><i class="fas fa-book"></i> ${escHtml(j.subject)}</span>
         <span class="badge badge-category">${escHtml(j.category)}</span>
@@ -717,10 +1152,7 @@ function buildJournalCard(j) {
       <div class="jcard-preview">${escHtml(preview)}</div>
       <div class="jcard-footer">
         <span class="jcard-date"><i class="fas fa-calendar-alt"></i> ${formatDateShort(j.date)}</span>
-        <div class="jcard-actions" onclick="event.stopPropagation()">
-          <button class="jcard-btn edit" onclick="editJournal('${j.id}')" title="Edit"><i class="fas fa-edit"></i></button>
-          <button class="jcard-btn del"  onclick="confirmDelete('${j.id}')" title="Hapus"><i class="fas fa-trash"></i></button>
-        </div>
+        ${actionButtons}
       </div>
     </div>
   `;
@@ -756,6 +1188,7 @@ function openModal(id) {
       <div>
         <div class="modal-title">${escHtml(j.title)}</div>
         <div class="modal-date"><i class="fas fa-calendar"></i> ${formatDate(j.date)}</div>
+        ${isTeacher() ? `<div class="modal-date"><i class="fas fa-user-graduate"></i> ${escHtml(j.student_name || '-')} (${escHtml(j.student_class || '-')}${j.student_no_absen ? ` | Absen ${escHtml(String(j.student_no_absen))}` : ''})</div>` : ''}
       </div>
     </div>
     <div class="modal-meta">
@@ -779,6 +1212,7 @@ function openModal(id) {
   `;
 
   document.getElementById('modalOverlay').classList.remove('hidden');
+  document.querySelector('#modalOverlay .modal-actions')?.classList.toggle('hidden', isTeacher());
   document.body.style.overflow = 'hidden';
 }
 
@@ -810,6 +1244,11 @@ function closeConfirm() {
   pendingDeleteId = null;
 }
 async function deleteJournal(id) {
+  if (isTeacher()) {
+    showToast('Akun guru hanya bisa melihat jurnal murid.', 'error');
+    return;
+  }
+
   closeConfirm();
   closeModalBtn();
   
@@ -1014,9 +1453,37 @@ function setSearchFilter(f, el) {
 // ===== PROFILE =====
 function renderProfile() {
   const initials = getInitials(currentUser.name);
-  document.getElementById('profileAvatar').textContent = initials;
+  setAvatarByGender('profileAvatar', currentUser.gender, initials);
   document.getElementById('profileName').textContent = currentUser.name;
-  document.getElementById('profileClass').textContent = currentUser.kelas;
+  document.getElementById('profileClass').textContent = buildUserSubLabel(currentUser);
+
+  const isGuru = isTeacher();
+  document.getElementById('teacherProfileCard')?.classList.toggle('hidden', !isGuru);
+  document.getElementById('profileEditCard')?.classList.toggle('hidden', isGuru);
+  document.getElementById('profileDangerCard')?.classList.toggle('hidden', isGuru);
+  document.getElementById('studentExportActions')?.classList.toggle('hidden', isGuru);
+  document.getElementById('teacherExportActions')?.classList.toggle('hidden', !isGuru);
+
+  const labelTotal = document.getElementById('pLabelTotal');
+  const labelMid = document.getElementById('pLabelMid');
+  const labelLast = document.getElementById('pLabelLast');
+  const exportDesc = document.getElementById('exportDesc');
+
+  if (isGuru) {
+    const all = teacherJournals || [];
+    const activeStudents = new Set(all.map(j => String(j.student_id || j.user_id || ''))).size;
+    const activeClasses = new Set(all.map(j => normalizeClassName(j.student_class))).size;
+
+    document.getElementById('pTotal').textContent = all.length;
+    document.getElementById('pStreak').textContent = activeStudents;
+    document.getElementById('pSubjects').textContent = activeClasses;
+    if (labelTotal) labelTotal.textContent = 'Jurnal Murid';
+    if (labelMid) labelMid.textContent = 'Murid Aktif';
+    if (labelLast) labelLast.textContent = 'Kelas Aktif';
+    if (exportDesc) exportDesc.textContent = 'Unduh jurnal murid dalam format JSON/CSV (semua data atau sesuai filter History).';
+    return;
+  }
+
   document.getElementById('editName').value = currentUser.name;
   document.getElementById('editClass').value = currentUser.kelas;
   document.getElementById('editUsername').value = currentUser.username;
@@ -1027,9 +1494,18 @@ function renderProfile() {
   document.getElementById('pTotal').textContent = journals.length;
   document.getElementById('pStreak').textContent = calcStreak(journals);
   document.getElementById('pSubjects').textContent = subjects.length;
+  if (labelTotal) labelTotal.textContent = 'Jurnal';
+  if (labelMid) labelMid.textContent = 'Streak';
+  if (labelLast) labelLast.textContent = 'Mapel';
+  if (exportDesc) exportDesc.textContent = 'Unduh semua jurnal kamu dalam format JSON';
 }
 
 async function saveProfile(e) {
+  if (isTeacher()) {
+    showToast('Profil guru bersifat read-only.', 'error');
+    return;
+  }
+
   e.preventDefault();
   const nama     = document.getElementById('editName').value.trim();
   const kelas    = document.getElementById('editClass').value.trim();
@@ -1038,7 +1514,7 @@ async function saveProfile(e) {
 
   // Kita tidak perlu lagi mengecek localStorage
   try {
-    const response = await fetch('api/update_profile.php', {
+    const result = await requestJson('api/update_profile.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1050,8 +1526,6 @@ async function saveProfile(e) {
       })
     });
 
-    const result = await response.json();
-
     if (result.status === 'success') {
       // Jika username berubah, perbarui session lokal
       if (username !== currentUser.username) {
@@ -1059,7 +1533,9 @@ async function saveProfile(e) {
       }
 
       // Perbarui state currentUser dengan data terbaru dari server
-      currentUser = result.user;
+      currentUser = normalizeUser({ ...currentUser, ...result.user });
+      rememberUserGender(currentUser.username, currentUser.gender);
+      setStoredUser(currentUser);
       
       // Perbarui tampilan UI (Sidebar, Topbar, dan Form Profil)
       updateUserUI();
@@ -1077,6 +1553,11 @@ async function saveProfile(e) {
 }
 // ===== EXPORT =====
 function exportJSON() {
+  if (isTeacher()) {
+    exportTeacherFilteredJSON();
+    return;
+  }
+
   const journals = getJournals();
   const blob = new Blob([JSON.stringify({ user: currentUser.name, exportedAt: new Date().toISOString(), journals }, null, 2)], { type: 'application/json' });
   downloadBlob(blob, `jurnal_${currentUser.username}_${todayStr()}.json`);
@@ -1084,6 +1565,11 @@ function exportJSON() {
 }
 
 function exportCSV() {
+  if (isTeacher()) {
+    exportTeacherFilteredCSV();
+    return;
+  }
+
   const journals = getJournals();
   const headers = ['Judul','Tanggal','Mata Pelajaran','Kategori','Mood','Rating','Poin Penting','Pertanyaan'];
   const rows = journals.map(j => [
@@ -1110,17 +1596,72 @@ function downloadBlob(blob, filename) {
   document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
+function getTeacherFilteredJournals() {
+  return (localJournals || []).slice();
+}
+
+function exportTeacherAllJSON() {
+  const journals = (teacherJournals || []).slice();
+  const blob = new Blob([JSON.stringify({ user: currentUser.name, role: 'guru', exportedAt: new Date().toISOString(), scope: 'all', journals }, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, `jurnal_murid_semua_${todayStr()}.json`);
+  showToast('Semua jurnal murid diekspor (JSON) ✅', 'success');
+}
+
+function exportTeacherFilteredJSON() {
+  const journals = getTeacherFilteredJournals();
+  const blob = new Blob([JSON.stringify({ user: currentUser.name, role: 'guru', exportedAt: new Date().toISOString(), scope: 'filtered', journals }, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, `jurnal_murid_filter_${todayStr()}.json`);
+  showToast('Jurnal sesuai filter diekspor (JSON) ✅', 'success');
+}
+
+function buildTeacherCsv(journals) {
+  const headers = ['Nama Murid','Kelas','No Absen','Judul','Tanggal','Mata Pelajaran','Kategori','Mood','Rating','Poin Penting','Pertanyaan'];
+  const rows = journals.map(j => [
+    `"${String(j.student_name || '').replace(/"/g,'""')}"`,
+    `"${String(j.student_class || '').replace(/"/g,'""')}"`,
+    `"${String(j.student_no_absen || '').replace(/"/g,'""')}"`,
+    `"${String(j.title || '').replace(/"/g,'""')}"`,
+    j.date || '',
+    `"${String(j.subject || '').replace(/"/g,'""')}"`,
+    `"${String(j.category || '').replace(/"/g,'""')}"`,
+    String(j.mood || ''),
+    String(j.rating || ''),
+    `"${String(j.keypoints || '').replace(/"/g,'""')}"`,
+    `"${String(j.questions || '').replace(/"/g,'""')}"`
+  ].join(','));
+  return [headers.join(','), ...rows].join('\n');
+}
+
+function exportTeacherAllCSV() {
+  const journals = (teacherJournals || []).slice();
+  const csv = buildTeacherCsv(journals);
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, `jurnal_murid_semua_${todayStr()}.csv`);
+  showToast('Semua jurnal murid diekspor (CSV) ✅', 'success');
+}
+
+function exportTeacherFilteredCSV() {
+  const journals = getTeacherFilteredJournals();
+  const csv = buildTeacherCsv(journals);
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, `jurnal_murid_filter_${todayStr()}.csv`);
+  showToast('Jurnal sesuai filter diekspor (CSV) ✅', 'success');
+}
+
 async function deleteAllData() {
+  if (isTeacher()) {
+    showToast('Akun guru tidak dapat menghapus jurnal.', 'error');
+    return;
+  }
+
   if (!confirm(`Yakin hapus semua ${localJournals.length} jurnal kamu? Tindakan ini tidak bisa dibatalkan!`)) return;
 
   try {
-    const response = await fetch('api/delete_all_data.php', {
+    const result = await requestJson('api/delete_all_data.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: currentUser.id })
     });
-
-    const result = await response.json();
 
     if (result.status === 'success') {
       // Kosongkan data lokal agar UI langsung update tanpa harus refresh
