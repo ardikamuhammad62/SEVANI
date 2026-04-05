@@ -204,7 +204,11 @@ async function requestJson(url, options = {}) {
     if (response.status === 405) {
       throw new Error('Endpoint API menolak request. Jalankan proyek lewat server PHP (XAMPP/Laragon), bukan Live Server 5500.');
     }
-    throw new Error(result?.message || `HTTP ${response.status}`);
+    const bodySnippet = (raw || '').replace(/\s+/g, ' ').trim().slice(0, 220);
+    if (result?.message) {
+      throw new Error(result.message);
+    }
+    throw new Error(bodySnippet ? `HTTP ${response.status}: ${bodySnippet}` : `HTTP ${response.status}`);
   }
 
   if (!result) {
@@ -406,6 +410,8 @@ async function handleRegister(e) {
   const role = document.getElementById('regRole').value;
   const nama = document.getElementById('regName').value.trim();
   const gender = normalizeGender(document.getElementById('regGender').value);
+  const password = document.getElementById('regPassword').value;
+  const passwordConfirm = document.getElementById('regPasswordConfirm').value;
 
   if (!nama) {
     showError('registerError', 'Nama wajib diisi.');
@@ -417,7 +423,17 @@ async function handleRegister(e) {
     return;
   }
 
-  const payload = { role, nama, gender };
+  if (password.length < 6) {
+    showError('registerError', 'Password minimal 6 karakter.');
+    return;
+  }
+
+  if (password !== passwordConfirm) {
+    showError('registerError', 'Konfirmasi password tidak cocok.');
+    return;
+  }
+
+  const payload = { role, nama, gender, password };
 
   if (role === 'guru') {
     const nip = document.getElementById('regNip').value.replace(/\D/g, '');
@@ -564,7 +580,6 @@ function configureRoleUI() {
   toggle('historyDashboardGrid', teacher);
   toggle('historySubjectCard', teacher);
   toggle('historyRekapFilterCard', teacher);
-  toggle('rekapStats', teacher);
   toggle('rekapTimeline', teacher);
   toggle('rekapEmpty', teacher);
   toggle('rekapPlaceholder', teacher);
@@ -908,8 +923,8 @@ function renderDashboard() {
   const weekJournals = journals.filter(j => new Date(j.date + 'T00:00:00') >= weekStart);
   document.getElementById('statWeek').textContent = weekJournals.length;
 
-  // Streak
-  document.getElementById('statStreak').textContent = calcStreak(journals);
+  // Active days
+  document.getElementById('statActiveDays').textContent = calcActiveDays(journals);
 
   // Subjects
   const subjects = getUniqueSubjects(journals);
@@ -949,18 +964,9 @@ function renderDashboard() {
     : '<p class="text-muted" style="text-align:center;padding:20px">Belum ada data</p>';
 }
 
-function calcStreak(journals) {
+function calcActiveDays(journals) {
   if (!journals.length) return 0;
-  const dates = [...new Set(journals.map(j => j.date))].sort((a,b) => b.localeCompare(a));
-  let streak = 0;
-  let check = new Date(todayStr() + 'T00:00:00');
-  for (let d of dates) {
-    const jDate = new Date(d + 'T00:00:00');
-    const diff = (check - jDate) / (1000*60*60*24);
-    if (diff === 0 || diff === 1) { streak++; check = jDate; }
-    else break;
-  }
-  return streak;
+  return new Set(journals.map(j => j.date)).size;
 }
 
 // ===== HABIT CARDS =====
@@ -1446,7 +1452,6 @@ function renderRekap() {
   const start = document.getElementById('rekapStart').value;
   const end   = document.getElementById('rekapEnd').value;
 
-  const statsEl    = document.getElementById('rekapStats');
   const timelineEl = document.getElementById('rekapTimeline');
   const emptyEl    = document.getElementById('rekapEmpty');
   const placeholderEl = document.getElementById('rekapPlaceholder');
@@ -1465,50 +1470,12 @@ function renderRekap() {
   const journals = getJournals().filter(j => j.date >= start && j.date <= end);
 
   if (!journals.length) {
-    statsEl.style.display = 'none';
     timelineEl.innerHTML  = '';
     emptyEl.classList.remove('hidden');
     return;
   }
 
   emptyEl.classList.add('hidden');
-
-  // Stats
-  const subjects  = getUniqueSubjects(journals);
-  const totalDays = [...new Set(journals.map(j => j.date))].length;
-  const avgPerDay = (journals.length / Math.max(totalDays, 1)).toFixed(1);
-
-  statsEl.style.display = 'grid';
-  statsEl.innerHTML = `
-    <div class="stat-card purple">
-      <div class="stat-icon"><i class="fas fa-book"></i></div>
-      <div class="stat-info">
-        <div class="stat-num">${journals.length}</div>
-        <div class="stat-label">Total Jurnal</div>
-      </div>
-    </div>
-    <div class="stat-card blue">
-      <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
-      <div class="stat-info">
-        <div class="stat-num">${totalDays}</div>
-        <div class="stat-label">Hari Aktif</div>
-      </div>
-    </div>
-    <div class="stat-card green">
-      <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
-      <div class="stat-info">
-        <div class="stat-num">${subjects.length}</div>
-        <div class="stat-label">Mata Pelajaran</div>
-      </div>
-    </div>
-    <div class="stat-card orange">
-      <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
-      <div class="stat-info">
-        <div class="stat-num">${avgPerDay}</div>
-        <div class="stat-label">Rata-rata / Hari</div>
-      </div>
-    </div>
-  `;
 
   // Group by date
   const grouped = {};
@@ -1629,7 +1596,7 @@ function renderProfile() {
     const activeClasses = new Set(all.map(j => normalizeClassName(j.student_class))).size;
 
     document.getElementById('pTotal').textContent = all.length;
-    document.getElementById('pStreak').textContent = activeStudents;
+    document.getElementById('pActiveDays').textContent = activeStudents;
     document.getElementById('pSubjects').textContent = activeClasses;
     if (labelTotal) labelTotal.textContent = 'Jurnal Murid';
     if (labelMid) labelMid.textContent = 'Murid Aktif';
@@ -1646,10 +1613,10 @@ function renderProfile() {
   const journals = getJournals();
   const subjects = getUniqueSubjects(journals);
   document.getElementById('pTotal').textContent = journals.length;
-  document.getElementById('pStreak').textContent = calcStreak(journals);
+  document.getElementById('pActiveDays').textContent = calcActiveDays(journals);
   document.getElementById('pSubjects').textContent = subjects.length;
   if (labelTotal) labelTotal.textContent = 'Jurnal';
-  if (labelMid) labelMid.textContent = 'Streak';
+  if (labelMid) labelMid.textContent = 'Hari Aktif';
   if (labelLast) labelLast.textContent = 'Mapel';
   if (exportDesc) exportDesc.textContent = 'Unduh semua jurnal kamu dalam format JSON';
 }

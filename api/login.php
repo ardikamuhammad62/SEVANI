@@ -49,8 +49,8 @@ if (!empty($data->username) && !empty($data->password)) {
                     "noAbsen" => $role === 'murid' ? $row['no_absen'] : '',
                     "agama" => $role === 'murid' ? $row['agama'] : '',
                     "role" => $role,
-                    "nisn" => $role === 'murid' ? $row['username'] : '',
-                    "nip" => $role === 'guru' ? $row['username'] : '',
+                    "nisn" => $role === 'murid' ? $row['nip_nisn'] : '',
+                    "nip" => $role === 'guru' ? $row['nip_nisn'] : '',
                     "gender" => $gender,
                     "username" => $row['nip_nisn']
                 ]
@@ -59,10 +59,10 @@ if (!empty($data->username) && !empty($data->password)) {
             echo json_encode(["status" => "error", "message" => "Password salah."], JSON_UNESCAPED_UNICODE);
         }
     } else {
-        echo json_encode(["status" => "error", "message" => "Username tidak ditemukan."], JSON_UNESCAPED_UNICODE);
+        echo json_encode(["status" => "error", "message" => "NIP/NISN tidak ditemukan."], JSON_UNESCAPED_UNICODE);
     }
 } else {
-    echo json_encode(["status" => "error", "message" => "Username dan Password harus diisi."], JSON_UNESCAPED_UNICODE);
+    echo json_encode(["status" => "error", "message" => "NIP/NISN dan password harus diisi."], JSON_UNESCAPED_UNICODE);
 }
 
 $conn->close();

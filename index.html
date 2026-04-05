@@ -111,11 +111,25 @@
             <input type="text" id="regNip" inputmode="numeric" maxlength="18" pattern="\d{18}" placeholder="Masukkan NIP 18 digit" />
           </div>
         </div>
+        <div class="form-group">
+          <label><i class="fas fa-lock"></i> Password</label>
+          <div class="input-pass">
+            <input type="password" id="regPassword" minlength="6" placeholder="Minimal 6 karakter" required />
+            <button type="button" class="toggle-pass" onclick="togglePass('regPassword',this)"><i class="fas fa-eye"></i></button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label><i class="fas fa-lock"></i> Konfirmasi Password</label>
+          <div class="input-pass">
+            <input type="password" id="regPasswordConfirm" minlength="6" placeholder="Ulangi password" required />
+            <button type="button" class="toggle-pass" onclick="togglePass('regPasswordConfirm',this)"><i class="fas fa-eye"></i></button>
+          </div>
+        </div>
         <div id="registerError" class="form-error hidden"></div>
         <button type="submit" class="btn-primary btn-full">
           <i class="fas fa-user-plus"></i> Daftar
         </button>
-        <p class="auth-hint" style="margin-top:10px">Password awal otomatis sama dengan NISN/NIP.</p>
+        <p class="auth-hint" style="margin-top:10px">Gunakan password pribadi untuk akunmu.</p>
         <p class="auth-hint">Sudah punya akun? <a onclick="switchTab('login')">Masuk</a></p>
       </form>
 
@@ -240,10 +254,10 @@
             </div>
           </div>
           <div class="stat-card green">
-            <div class="stat-icon"><i class="fas fa-fire"></i></div>
+            <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
             <div class="stat-info">
-              <div class="stat-num" id="statStreak">0</div>
-              <div class="stat-label">Hari Berturut-turut</div>
+              <div class="stat-num" id="statActiveDays">0</div>
+              <div class="stat-label">Hari Aktif</div>
             </div>
           </div>
           <div class="stat-card orange">
@@ -296,7 +310,6 @@
           </div>
         </div>
 
-        <div id="rekapStats" class="stats-grid" style="display:none;margin-bottom:24px"></div>
         <div id="rekapTimeline" class="mt-20"></div>
 
         <div id="rekapEmpty" class="empty-state hidden">
@@ -374,7 +387,7 @@
             </div>
             <div class="profile-stats">
               <div class="pstat"><div class="pstat-num" id="pTotal">0</div><div class="pstat-label" id="pLabelTotal">Jurnal</div></div>
-              <div class="pstat"><div class="pstat-num" id="pStreak">0</div><div class="pstat-label" id="pLabelMid">Streak</div></div>
+              <div class="pstat"><div class="pstat-num" id="pActiveDays">0</div><div class="pstat-label" id="pLabelMid">Hari Aktif</div></div>
               <div class="pstat"><div class="pstat-num" id="pSubjects">0</div><div class="pstat-label" id="pLabelLast">Mapel</div></div>
             </div>
           </div>
@@ -398,7 +411,7 @@
                   <input type="text" id="editClass" required />
                 </div>
                 <div class="form-group">
-                  <label>Username</label>
+                  <label>NISN / NIP</label>
                   <input type="text" id="editUsername" required />
                 </div>
                 <div class="form-group">
